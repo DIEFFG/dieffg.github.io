@@ -1,0 +1,22 @@
+{
+  "name": "RECON — TTCF Management System",
+  "short_name": "RECON",
+  "description": "Records, Exams, Competitions, Operations and Notes — Trinidad and Tobago Cadet Force",
+  "id": "./",
+  "start_url": "./index.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#154b12",
+  "lang": "en",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Shield Competition", "url": "./index.html#shield", "icons": [{ "src": "img/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Announcements", "url": "./index.html#announcements", "icons": [{ "src": "img/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
