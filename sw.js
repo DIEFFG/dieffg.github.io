@@ -1,7 +1,7 @@
 /* RECON service worker: app-shell cache, Firebase push (data-only), notification clicks. */
 importScripts('js/config.js');
-var CACHE = 'recon-shell-v21';
-var SHELL = ['./', 'index.html', 'login.html', 'css/styles.css', 'css/modern.css', 'js/config.js', 'js/api.js', 'js/app.js', 'js/notify.js', 'js/ui.js',
+var CACHE = 'recon-shell-v22';
+var SHELL = ['./', 'index.html', 'login.html', 'css/styles.css', 'css/modern.css', 'css/brand.css', 'js/config.js', 'js/api.js', 'js/app.js', 'js/notify.js', 'js/ui.js',
              'manifest.webmanifest', 'img/icon-192.png', 'img/icon-512.png'];
 
 self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); })); });

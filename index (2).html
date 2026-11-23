@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RECON - TTCF Management System</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta name="theme-color" content="#154b12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="img/icon-192.png">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/modern.css">
+  <link rel="stylesheet" href="css/brand.css">
+</head>
+<body>
+  
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+  </div>
+  <!-- Corner Spinner for Auto-Refresh -->
+<div id="cornerSpinner" class="corner-spinner">
+  <div class="mini-spinner"></div>
+</div>
+  
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+  
+  <!-- Main App -->
+  <div id="app" class="app">
+    <!-- Sidebar -->
+    <nav id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <img src="img/icon-192.png" alt="TTCF" class="logo">
+        <h2>RECON</h2>
+        <p class="subtitle">Trinidad and Tobago Cadet Force</p>
+        <p class="sub-label">Training Department</p>
+      </div>
+      
+      <div class="user-info">
+        <div class="avatar"><i class="fas fa-user"></i></div>
+        <div class="user-details">
+          <span id="currentUserName">Guest</span>
+          <span id="currentUserRole" class="role-badge">View Only</span>
+        </div>
+      </div>
+      
+      <ul class="nav-menu">
+        <li class="nav-item active" data-page="dashboard"><i class="fas fa-home"></i><span>Dashboard</span></li>
+        <li class="nav-item" data-page="shield"><i class="fas fa-trophy"></i><span>Shield Competition</span></li>
+        <li class="nav-item admin-instructor-only" data-page="cadets" style="display:none;"><i class="fas fa-users"></i><span>Cadets</span></li>
+        <li class="nav-item" data-page="star-exams" style="display:none;"><i class="fas fa-star"></i><span>Star Exams</span></li>
+        <li class="nav-item" data-page="courses"><i class="fas fa-graduation-cap"></i><span>Courses</span></li>
+        <li class="nav-item" data-page="resources"><i class="fas fa-folder-open"></i><span>Resources</span></li>
+        <li class="nav-item" data-page="announcements"><i class="fas fa-bullhorn"></i><span>Announcements</span></li>
+        <li class="nav-item" data-page="reviews"><i class="fas fa-quote-left"></i><span>Views & Reviews</span></li>
+        <li class="nav-item" data-page="calendar"><i class="fas fa-calendar"></i><span>Calendar</span></li>
+        <li class="nav-item" data-page="users" style="display:none;"><i class="fas fa-user-cog"></i><span>Users</span></li>
+      </ul>
+      
+      <div class="sidebar-footer">
+        <button id="loginBtn" class="btn btn-primary btn-block" onclick="redirectToLogin()">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </button>
+        <button id="logoutBtn" class="btn btn-outline btn-block" onclick="logout()" style="display:none;">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="header">
+        <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <h1 id="pageTitle">Dashboard</h1>
+        <div class="header-actions">
+          <div class="search-container">
+            <input type="text" id="globalSearch" class="search-input" placeholder="Search cadets, courses, events..." onkeyup="handleSearchKeyup(event)" onfocus="showSearchResults()">
+            <button class="search-btn" onclick="performGlobalSearch()"><i class="fas fa-search"></i></button>
+            <div id="searchResults" class="search-results-dropdown"></div>
+          </div>
+          <button class="btn btn-outline btn-sm refresh-btn" onclick="manualRefresh()" title="Refresh now">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+          <div id="refreshIndicator" class="refresh-indicator active" onclick="toggleAutoRefresh()" title="Auto-refresh ON (every 60s) - Click to disable">
+            <i class="fas fa-circle"></i>
+            <span>Live</span>
+          </div>
+          <button id="logoutBtnHeader" class="btn btn-outline btn-sm" onclick="logout()" style="display:none;">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </header>
+      
+      <div class="content">
+        <!-- Guest Banner -->
+        <div id="guestBanner" class="alert alert-info show">
+          <i class="fas fa-info-circle"></i>
+          <span>You are viewing as a guest. Login for full access.</span>
+        </div>
+        
+        <!-- Dashboard Page -->
+        <div id="page-dashboard" class="page active">
+          <div class="stats-grid" id="statsGrid">
+            <!-- Cadet Stats - Admin/Instructor Only -->
+            <div class="stat-card admin-instructor-only" style="display:none;"><div class="stat-icon"><i class="fas fa-users"></i></div><div class="stat-info"><span class="stat-value" id="statTotalCadets">0</span><span class="stat-label">Total Cadets</span></div></div>
+            <div class="stat-card admin-instructor-only" style="display:none;"><div class="stat-icon"><i class="fas fa-user-check"></i></div><div class="stat-info"><span class="stat-value" id="statActiveCadets">0</span><span class="stat-label">Active</span></div></div>
+            <div class="stat-card admin-instructor-only" style="display:none;"><div class="stat-icon"><i class="fas fa-percentage"></i></div><div class="stat-info"><span class="stat-value" id="statPassRate">0%</span><span class="stat-label">Pass Rate</span></div></div>
+            <div class="stat-card"><div class="stat-icon"><i class="fas fa-graduation-cap"></i></div><div class="stat-info"><span class="stat-value" id="statOpenCourses">0</span><span class="stat-label">Open Courses</span></div></div>
+          </div>
+          
+          <!-- Shield Competition Leaderboard - Prominent Section -->
+          <div class="card shield-leaderboard-card">
+            <div class="card-header shield-header">
+              <h3><i class="fas fa-trophy"></i> Shield Competition <span id="dashboardShieldYear">2025-2026</span></h3>
+              
+            </div>
+            <div class="card-body">
+              <!-- Current Leader Banner -->
+              <div id="shieldLeaderBanner" class="shield-leader-banner">
+                <div class="leader-trophy"><i class="fas fa-crown"></i></div>
+                <div class="leader-info">
+                  <span class="leader-label">Current Leader</span>
+                  <span class="leader-school" id="leaderSchoolName">Loading...</span>
+                  <span class="leader-score" id="leaderSchoolScore"></span>
+                </div>
+              </div>
+              
+              <div id="dashboardShieldLeaderboard" class="shield-podium">
+                <p class="text-muted">Loading Shield Competition results...</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="dashboard-grid">
+            <div class="card">
+              <div class="card-header"><h3><i class="fas fa-bullhorn"></i> Announcements</h3></div>
+              <div class="card-body" id="dashboardAnnouncements"><p class="text-muted">Loading...</p></div>
+            </div>
+            <div class="card logged-in-only" style="display:none;">
+              <div class="card-header"><h3><i class="fas fa-star"></i> Star Exam Leaders</h3></div>
+              <div class="card-body" id="leaderboardPreview"><p class="text-muted">Loading...</p></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Cadets Page -->
+        <div id="page-cadets" class="page admin-instructor-only">
+          <div class="page-header">
+            <h2>Cadet Records</h2>
+            <button class="btn btn-primary admin-only" onclick="showAddCadetModal()"><i class="fas fa-plus"></i> Add Cadet</button>
+          </div>
+          <div class="card">
+            <div class="table-responsive">
+              <table class="table">
+                <thead><tr><th>Reg #</th><th>Rank</th><th>Name</th><th>Battalion</th><th>Unit</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="cadetsTableBody"><tr><td colspan="7" class="text-center">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Star Exams Page -->
+        <div id="page-star-exams" class="page">
+          <div class="page-header">
+            <h2>Star Examinations</h2>
+            <div class="header-actions">
+              <button class="btn btn-secondary admin-only" onclick="showStarExamImportModal()"><i class="fas fa-file-import"></i> Import</button>
+              <button class="btn btn-primary admin-only" onclick="showAddExamModal()"><i class="fas fa-plus"></i> Add Result</button>
+            </div>
+          </div>
+          
+          <!-- Tabs -->
+          <div class="star-tabs">
+            <button class="star-tab" onclick="switchStarTab('dashboard')" id="starTabDashboard" style="display:none;">
+              <i class="fas fa-chart-bar"></i> Dashboard
+            </button>
+            <button class="star-tab active" onclick="switchStarTab('leaderboard')" id="starTabLeaderboard">
+              <i class="fas fa-list-ol"></i> Leaderboard
+            </button>
+          </div>
+          
+          <!-- DASHBOARD TAB -->
+          <div id="starDashboardView" style="display:none;">
+            <!-- Summary Cards -->
+            <div class="star-summary-cards" id="starSummaryCards">
+              <div class="star-summary-card">
+                <div class="star-summary-icon"><i class="fas fa-users"></i></div>
+                <div class="star-summary-info">
+                  <span class="star-summary-num" id="starTotalCadets">0</span>
+                  <span class="star-summary-label">Total Entries</span>
+                </div>
+              </div>
+              <div class="star-summary-card card-pass">
+                <div class="star-summary-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="star-summary-info">
+                  <span class="star-summary-num" id="starTotalPass">0</span>
+                  <span class="star-summary-label">Complete</span>
+                </div>
+              </div>
+              <div class="star-summary-card card-partial">
+                <div class="star-summary-icon"><i class="fas fa-adjust"></i></div>
+                <div class="star-summary-info">
+                  <span class="star-summary-num" id="starTotalPartial">0</span>
+                  <span class="star-summary-label">Partial</span>
+                </div>
+              </div>
+              <div class="star-summary-card card-fail">
+                <div class="star-summary-icon"><i class="fas fa-times-circle"></i></div>
+                <div class="star-summary-info">
+                  <span class="star-summary-num" id="starTotalFail">0</span>
+                  <span class="star-summary-label">Incomplete</span>
+                </div>
+              </div>
+              <div class="star-summary-card card-rate">
+                <div class="star-summary-icon"><i class="fas fa-percentage"></i></div>
+                <div class="star-summary-info">
+                  <span class="star-summary-num" id="starPassRate">0%</span>
+                  <span class="star-summary-label">Completion Rate</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Charts Row -->
+            <div class="star-dashboard-grid">
+              <!-- Star Level Breakdown -->
+              <div class="card star-dash-card">
+                <h4><i class="fas fa-star"></i> By Star Level</h4>
+                <div id="starLevelBreakdown" class="star-chart-area"></div>
+              </div>
+              
+              <!-- Battalion Breakdown -->
+              <div class="card star-dash-card">
+                <h4><i class="fas fa-flag"></i> By Battalion</h4>
+                <div id="starBattalionBreakdown" class="star-chart-area"></div>
+              </div>
+            </div>
+            
+            <!-- Completion Rate by Star Level -->
+            <div class="card star-dash-card">
+              <h4><i class="fas fa-trophy"></i> Completion Rate by Star Level</h4>
+              <div id="starPassRateByLevel" class="star-chart-area"></div>
+            </div>
+            
+            <!-- Subject Completion Rates (Overall Rings) -->
+            <div class="card star-dash-card">
+              <h4><i class="fas fa-book-open"></i> Subject Completion Rates — Overall</h4>
+              <div id="starSubjectRates" class="star-chart-area"></div>
+            </div>
+            
+            <!-- Subject Completion Rates by Star Level -->
+            <div class="card star-dash-card">
+              <h4><i class="fas fa-th-list"></i> Subject Completion Rates by Star Level</h4>
+              <div id="starSubjectByLevel" class="star-chart-area"></div>
+            </div>
+            
+            <!-- Battalion × Star Level Matrix -->
+            <div class="card star-dash-card">
+              <h4><i class="fas fa-th"></i> Battalion × Star Level Matrix</h4>
+              <div class="table-responsive">
+                <table class="table star-matrix-table" id="starMatrixTable">
+                  <thead id="starMatrixHead"></thead>
+                  <tbody id="starMatrixBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          
+          <!-- LEADERBOARD TAB -->
+          <div id="starLeaderboardView">
+            <!-- Filters & Search -->
+            <div class="star-filters-bar">
+              <div class="star-filter-group">
+                <label><i class="fas fa-star"></i> Star Level</label>
+                <select id="starFilterLevel" class="form-control form-control-sm" onchange="applyStarFilters()">
+                  <option value="all">All Stars</option>
+                  <option value="Star 1">Star 1</option>
+                  <option value="Star 2">Star 2</option>
+                  <option value="Star 3">Star 3</option>
+                  <option value="Star 4">Star 4</option>
+                  <option value="Master Cadet">Master Cadet</option>
+                </select>
+              </div>
+              <div class="star-filter-group">
+                <label><i class="fas fa-book"></i> Subject</label>
+                <select id="starFilterSubject" class="form-control form-control-sm" onchange="applyStarFilters()">
+                  <option value="all">All Subjects</option>
+                  <option value="DR">DR — Drill</option>
+                  <option value="UMC">UMC — Use of Map and Compass</option>
+                  <option value="SAA">SAA — Skill At Arms</option>
+                  <option value="FC">FC — Field Craft</option>
+                  <option value="AT">AT — Adventure Training</option>
+                </select>
+              </div>
+              <div class="star-filter-group">
+                <label><i class="fas fa-check-circle"></i> Status</label>
+                <select id="starFilterStatus" class="form-control form-control-sm" onchange="applyStarFilters()">
+                  <option value="all">All</option>
+                  <option value="Pass">Complete</option>
+                  <option value="Partial">Partial</option>
+                  <option value="Fail">Incomplete</option>
+                </select>
+              </div>
+              <div class="star-filter-group star-search-group">
+                <label><i class="fas fa-search"></i> Search</label>
+                <input type="text" id="starSearchInput" class="form-control form-control-sm" placeholder="Name, Reg #, Battalion..." oninput="applyStarFilters()">
+              </div>
+              <div class="star-filter-group star-filter-count">
+                <span id="starFilterCount"></span>
+                <button class="btn btn-outline btn-xs" onclick="clearStarFilters()" title="Clear all filters"><i class="fas fa-times"></i> Clear</button>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="table-responsive">
+                <table class="table" id="starExamTable">
+                  <thead><tr><th>#</th><th>Reg #</th><th>Name</th><th>Battalion</th><th>Star</th><th>DR</th><th>UMC</th><th>SAA</th><th>FC</th><th>AT</th><th>Score</th><th>Status</th><th class="admin-only">Actions</th></tr></thead>
+                  <tbody id="starLeaderboardBody"><tr><td colspan="13" class="text-center">Loading...</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- ============================================
+             SHIELD COMPETITION PAGE - REDESIGNED
+             Category-Based Tabs with Team Management
+             ============================================ -->
+        <div id="page-shield" class="page">
+          <div class="section-header">
+            <h2><i class="fas fa-shield-alt"></i> Shield Competition</h2>
+            <div class="section-actions">
+              <select id="shieldYearSelect" onchange="loadShieldData()">
+                <option value="2025">2025-2026</option>
+                <option value="2024">2024-2025</option>
+                <option value="2023">2023-2024</option>
+              </select>
+              <button class="btn btn-primary" onclick="showAddShieldResultModal()" id="addShieldBtn" style="display:none;">
+                <i class="fas fa-plus"></i> Add Result
+              </button>
+            </div>
+          </div>
+
+          <!-- Category Tabs -->
+          <div class="shield-tabs">
+            <button class="shield-tab active" data-category="overview" onclick="switchShieldCategory('overview')">
+              <i class="fas fa-trophy"></i> <span>Overview</span>
+            </button>
+            <button class="shield-tab" data-category="public-speaking" onclick="switchShieldCategory('public-speaking')">
+              <i class="fas fa-microphone"></i> <span>Public Speaking</span>
+            </button>
+            <button class="shield-tab" data-category="orienteering" onclick="switchShieldCategory('orienteering')">
+              <i class="fas fa-compass"></i> <span>Orienteering</span>
+            </button>
+            <button class="shield-tab" data-category="small-bore" onclick="switchShieldCategory('small-bore')">
+              <i class="fas fa-crosshairs"></i> <span>Small Bore</span>
+            </button>
+            <button class="shield-tab" data-category="drill" onclick="switchShieldCategory('drill')">
+              <i class="fas fa-users"></i> <span>Drill</span>
+            </button>
+            <button class="shield-tab" data-category="military-knowledge" onclick="switchShieldCategory('military-knowledge')">
+              <i class="fas fa-book"></i> <span>Mil Knowledge</span>
+            </button>
+            <button class="shield-tab" data-category="platoon-records" onclick="switchShieldCategory('platoon-records')">
+              <i class="fas fa-clipboard-list"></i> <span>Platoon Records</span>
+            </button>
+            <button class="shield-tab" data-category="campcraft" onclick="switchShieldCategory('campcraft')">
+              <i class="fas fa-campground"></i> <span>Campcraft</span>
+            </button>
+          </div>
+
+          <!-- Tab Content Panels -->
+          <div class="shield-tab-content">
+            
+            <!-- Overview Panel -->
+            <div id="shield-overview" class="shield-panel active">
+              <div class="overview-grid">
+                <div class="category-summary-card">
+                  <h3><i class="fas fa-chart-bar"></i> Category Breakdown</h3>
+                  <div id="categoryBreakdown" class="category-breakdown">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Full School/Platoon Leaderboard -->
+              <div class="card school-platoon-leaderboard-card">
+                <div class="school-platoon-header">
+                  <h3><i class="fas fa-list-ol"></i> School / Platoon Leaderboard</h3>
+                  <div class="school-platoon-controls">
+                    <input type="text" id="schoolLeaderboardSearch" class="form-control form-control-sm" placeholder="Search school..." oninput="filterSchoolLeaderboard()">
+                  </div>
+                </div>
+                <div class="table-responsive table-responsive-sticky">
+                  <table class="data-table" id="schoolPlatoonTable">
+                    <thead>
+                      <tr>
+                        <th class="col-rank">#</th>
+                        <th class="col-school">School / Unit</th>
+                        <th class="col-platoon">Platoon</th>
+                        <th class="col-cat" title="Public Speaking">PS</th>
+                        <th class="col-cat" title="Orienteering">ORI</th>
+                        <th class="col-cat" title="Small Bore Shooting">SBS</th>
+                        <th class="col-cat" title="Drill">DRL</th>
+                        <th class="col-cat" title="Military Knowledge">MK</th>
+                        <th class="col-cat" title="Platoon Records">PR</th>
+                        <th class="col-cat" title="Campcraft">CC</th>
+                        <th class="col-total">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody id="schoolPlatoonLeaderboardBody">
+                      <!-- Populated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Public Speaking Panel -->
+            <div id="shield-public-speaking" class="shield-panel">
+              <div class="panel-header">
+                <h3><i class="fas fa-microphone"></i> Public Speaking Results</h3>
+                <button class="btn btn-sm btn-primary" onclick="showCategoryResultModal('Public Speaking')" id="addPublicSpeakingBtn" style="display:none;">
+                  <i class="fas fa-plus"></i> Add Result
+                </button>
+              </div>
+              <div class="category-leaderboard" id="publicSpeakingLeaderboard">
+                <!-- Results table -->
+              </div>
+            </div>
+
+            <!-- Orienteering Panel (Team-Based) -->
+            <div id="shield-orienteering" class="shield-panel">
+              <div class="panel-header">
+                <h3><i class="fas fa-compass"></i> Orienteering Results (Team Event)</h3>
+                <div class="panel-actions">
+                  <button class="btn btn-sm btn-secondary" onclick="showOrienteeringTeamsView()" id="viewTeamsBtn">
+                    <i class="fas fa-users"></i> View Teams
+                  </button>
+                  <button class="btn btn-sm btn-primary" onclick="showOrienteeringTeamModal()" id="addOrienteeringTeamBtn" style="display:none;">
+                    <i class="fas fa-plus"></i> Add Team
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Orienteering Sub-tabs -->
+              <div class="orienteering-subtabs">
+                <button class="subtab active" data-view="team-leaderboard" onclick="switchOrienteeringView('team-leaderboard')">
+                  Team Leaderboard
+                </button>
+                <button class="subtab" data-view="team-management" onclick="switchOrienteeringView('team-management')" id="teamManagementTab" style="display:none;">
+                  Team Management
+                </button>
+              </div>
+
+              <div id="orienteeringContent">
+                <!-- Team Leaderboard View -->
+                <div id="orienteering-team-leaderboard" class="orienteering-view active">
+                  <div class="table-responsive table-responsive-sticky">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Rank</th>
+                        <th>Team</th>
+                        <th>Battalion</th>
+                        <th>School/Unit</th>
+                        <th>Markers</th>
+                        <th>Time</th>
+                        <th>Grid</th>
+                        <th>Equip</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody id="orienteeringTeamLeaderboardBody">
+                      <!-- Populated dynamically -->
+                    </tbody>
+                  </table>
+                  </div>
+                </div>
+
+                <!-- Team Management View (Admin Only) -->
+                <div id="orienteering-team-management" class="orienteering-view">
+                  <!-- Team Search Box -->
+                  <div class="team-search-container">
+                    <div class="team-search-wrapper">
+                      <i class="fas fa-search team-search-icon"></i>
+                      <input type="text" id="teamSearchInput" class="team-search-input" 
+                             placeholder="Search teams by name, school, or battalion..." 
+                             onkeyup="filterTeams(this.value)" 
+                             onfocus="showTeamSearchResults()"
+                             autocomplete="off">
+                      <button class="team-search-clear" onclick="clearTeamSearch()" id="teamSearchClear" style="display:none;">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                    <div id="teamSearchResults" class="team-search-results">
+                      <!-- Search results populated dynamically -->
+                    </div>
+                  </div>
+                  
+                  <div id="teamManagementContainer">
+                    <!-- Team cards populated dynamically -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Small Bore Shooting Panel -->
+            <div id="shield-small-bore" class="shield-panel">
+              <div class="panel-header">
+                <h3><i class="fas fa-crosshairs"></i> Small Bore Shooting Results</h3>
+                <button class="btn btn-sm btn-primary" onclick="showCategoryResultModal('Small Bore Shooting')" id="addSmallBoreBtn" style="display:none;">
+                  <i class="fas fa-plus"></i> Add Result
+                </button>
+              </div>
+              <div class="category-leaderboard" id="smallBoreLeaderboard">
+                <!-- Results table -->
+              </div>
+            </div>
+
+            <!-- Drill Panel -->
+            <div id="shield-drill" class="shield-panel">
+              <div class="panel-header">
+                <h3><i class="fas fa-users"></i> Drill Results</h3>
+                <button class="btn btn-sm btn-primary" onclick="showCategoryResultModal('Drill')" id="addDrillBtn" style="display:none;">
+                  <i class="fas fa-plus"></i> Add Result
+                </button>
+              </div>
+              <div class="category-leaderboard" id="drillLeaderboard">
+                <!-- Results table -->
+              </div>
+            </div>
+
+            <!-- Military Knowledge Panel -->
+            <div id="shield-military-knowledge" class="shield-panel">
+              <div class="panel-header">
+                <h3><i class="fas fa-book"></i> Military Knowledge Results</h3>
+                <button class="btn btn-sm btn-primary" onclick="showCategoryResultModal('Military Knowledge')" id="addMilKnowledgeBtn" style="display:none;">
+                  <i class="fas fa-plus"></i> Add Result
+                </button>
+              </div>
+              <div class="category-leaderboard" id="milKnowledgeLeaderboard">
+                <!-- Results table -->
+              </div>
+            </div>
+
+            <!-- Platoon Records Panel -->
+            <div id="shield-platoon-records" class="shield-panel">
+              <div class="panel-header">
+                <h3><i class="fas fa-clipboard-list"></i> Platoon Records Results</h3>
+                <button class="btn btn-sm btn-primary" onclick="showCategoryResultModal('Platoon Records')" id="addPlatoonRecordsBtn" style="display:none;">
+                  <i class="fas fa-plus"></i> Add Result
+                </button>
+              </div>
+              <div class="category-leaderboard" id="platoonRecordsLeaderboard">
+                <!-- Results table -->
+              </div>
+            </div>
+
+            <!-- Campcraft Panel -->
+            <div id="shield-campcraft" class="shield-panel">
+              <div class="panel-header">
+                <h3><i class="fas fa-campground"></i> Campcraft Results</h3>
+                <button class="btn btn-sm btn-primary" onclick="showCategoryResultModal('Campcraft')" id="addCampcraftBtn" style="display:none;">
+                  <i class="fas fa-plus"></i> Add Result
+                </button>
+              </div>
+              <div class="category-leaderboard" id="campcraftLeaderboard">
+                <!-- Results table -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <!-- END SHIELD COMPETITION PAGE -->
+        
+        <!-- Courses Page -->
+        <div id="page-courses" class="page">
+          <div class="page-header">
+            <h2>Training Courses</h2>
+            <div class="header-controls">
+              <button class="btn btn-outline admin-only" onclick="showCourseRegistrations()" id="btnViewRegistrations"><i class="fas fa-users"></i> View Registrations</button>
+              <button class="btn btn-primary admin-only" onclick="showAddCourseModal()"><i class="fas fa-plus"></i> Add Course</button>
+            </div>
+          </div>
+          <div id="coursesGrid" class="cards-grid">Loading...</div>
+          
+          <!-- Registrations Panel (Admin Only) -->
+          <div id="courseRegistrationsPanel" class="registrations-panel" style="display:none;">
+            <div class="panel-header">
+              <h3><i class="fas fa-clipboard-list"></i> Course Registrations</h3>
+              <button class="btn btn-outline btn-sm" onclick="hideCourseRegistrations()"><i class="fas fa-times"></i> Close</button>
+            </div>
+            <div class="panel-filters">
+              <select id="regFilterCourse" onchange="filterRegistrations()" class="form-control">
+                <option value="">All Courses</option>
+              </select>
+              <select id="regFilterStatus" onchange="filterRegistrations()" class="form-control">
+                <option value="">All Statuses</option>
+                <option value="Pending">Submitted</option>
+                <option value="Approved">Registered</option>
+                <option value="Denied">Rejected</option>
+              </select>
+            </div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Course</th>
+                    <th>Applicant Name</th>
+                    <th>Email</th>
+                    <th>Applied</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="registrationsTableBody">
+                  <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Syllabi Page -->
+        <div id="page-resources" class="page">
+          <div class="page-header">
+            <h2>Resources</h2>
+            <div class="header-buttons admin-only">
+              <button class="btn btn-primary" onclick="showAddSyllabusModal()"><i class="fas fa-plus"></i> Add Syllabus</button>
+              <button class="btn btn-outline" onclick="showAddManualModal()"><i class="fas fa-plus"></i> Add Manual</button>
+              <button class="btn btn-outline" onclick="showAddOrderModal()"><i class="fas fa-plus"></i> Add Order</button>
+              <button class="btn btn-outline" onclick="showAddPolicyModal()"><i class="fas fa-plus"></i> Add Policy</button>
+            </div>
+          </div>
+          
+          <!-- Resource Type Filter -->
+          <div class="resource-tabs">
+            <button class="resource-tab active" onclick="filterResources('all')">All Resources</button>
+            <button class="resource-tab" onclick="filterResources('syllabi')"><i class="fas fa-book"></i> Syllabi</button>
+            <button class="resource-tab" onclick="filterResources('manuals')"><i class="fas fa-file-alt"></i> Manuals</button>
+            <button class="resource-tab" onclick="filterResources('orders')"><i class="fas fa-gavel"></i> Orders</button>
+            <button class="resource-tab" onclick="filterResources('policies')"><i class="fas fa-shield-alt"></i> Policies</button>
+          </div>
+          
+          <!-- Syllabi Section -->
+          <div id="syllabiSection" class="resource-section">
+            <h3><i class="fas fa-book"></i> Training Syllabi</h3>
+            <div id="syllabiGrid" class="resources-grid">Loading...</div>
+          </div>
+          
+          <!-- Manuals Section -->
+          <div id="manualsSection" class="resource-section">
+            <h3><i class="fas fa-file-alt"></i> Training Manuals</h3>
+            <div id="manualsGrid" class="resources-grid">Loading...</div>
+          </div>
+          
+          <!-- Orders Section -->
+          <div id="ordersSection" class="resource-section">
+            <h3><i class="fas fa-gavel"></i> Orders</h3>
+            <div id="ordersGrid" class="resources-grid">Loading...</div>
+          </div>
+          
+          <!-- Policies Section -->
+          <div id="policiesSection" class="resource-section">
+            <h3><i class="fas fa-shield-alt"></i> Policies</h3>
+            <div id="policiesGrid" class="resources-grid">Loading...</div>
+          </div>
+        </div>
+        
+        <!-- Announcements Page -->
+        <div id="page-announcements" class="page">
+          <div class="page-header">
+            <h2>Announcements</h2>
+            <button class="btn btn-primary admin-only" onclick="showAddAnnouncementModal()"><i class="fas fa-plus"></i> New Announcement</button>
+          </div>
+          <div id="announcementsList">Loading...</div>
+        </div>
+        
+        <!-- Views & Reviews Page -->
+        <div id="page-reviews" class="page">
+          <div class="page-header">
+            <h2>Views & Reviews</h2>
+            <button class="btn btn-primary admin-only" onclick="showAddReviewModal()"><i class="fas fa-plus"></i> Add Review</button>
+          </div>
+          <div id="reviewsList" class="reviews-grid">Loading...</div>
+        </div>
+        
+        <!-- Calendar Page -->
+        <div id="page-calendar" class="page">
+          <div class="page-header">
+            <h2>Calendar</h2>
+            <button class="btn btn-primary admin-only" onclick="showAddEventModal()"><i class="fas fa-plus"></i> Add Event</button>
+          </div>
+          
+          <div class="calendar-container">
+            <div class="card">
+              <div class="calendar-header">
+                <button class="btn btn-outline btn-sm" onclick="prevMonth()"><i class="fas fa-chevron-left"></i></button>
+                <h3 id="currentMonthYear">January 2026</h3>
+                <button class="btn btn-outline btn-sm" onclick="nextMonth()"><i class="fas fa-chevron-right"></i></button>
+              </div>
+              <div class="calendar-weekdays">
+                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+              </div>
+              <div id="calendarDays" class="calendar-days"></div>
+            </div>
+            <div class="card">
+              <h3><i class="fas fa-calendar-alt"></i> Upcoming Events</h3>
+              <div id="upcomingEventsCards" class="upcoming-events-cards">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Users Page -->
+        <div id="page-users" class="page">
+          <div class="page-header">
+            <h2>User Management</h2>
+          </div>
+          <p class="page-description">Manage user registrations and access. Pending registrations require approval before users can access the system.</p>
+          <div class="card">
+            <div class="table-responsive">
+              <table class="table">
+                <thead><tr><th>Reg. No.</th><th>Name</th><th>Email</th><th>Battalion</th><th>Unit</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="usersTableBody"><tr><td colspan="8" class="text-center">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <!-- Generic Modal -->
+  <div id="modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Details</h3>
+        <button class="modal-close" onclick="closeModal('modal')">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal')">Close</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Cadet Modal -->
+  <div id="cadetModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="cadetModalTitle">Add Cadet</h3>
+        <button class="modal-close" onclick="closeModal('cadetModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="cadetForm">
+          <input type="hidden" id="cadetId">
+          <div class="form-row">
+            <div class="form-group"><label>Regimental Number *</label><input type="text" id="cadetRegNumber" class="form-control" required></div>
+            <div class="form-group"><label>Rank</label><select id="cadetRank" class="form-control"><option value="">Select Rank</option></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Surname *</label><input type="text" id="cadetSurname" class="form-control" required></div>
+            <div class="form-group"><label>First Name *</label><input type="text" id="cadetFirstName" class="form-control" required></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Battalion</label><select id="cadetBattalion" class="form-control"><option value="">Select Battalion</option></select></div>
+            <div class="form-group"><label>Unit/School</label><input type="text" id="cadetUnit" class="form-control"></div>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="cadetStatus" class="form-control"><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="Discharged">Discharged</option></select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('cadetModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCadet()">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Course Modal -->
+  <div id="courseModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="courseModalTitle">Add Course</h3>
+        <button class="modal-close" onclick="closeModal('courseModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="courseForm">
+          <input type="hidden" id="courseId">
+          <div class="form-row">
+            <div class="form-group"><label>Course Name *</label><input type="text" id="courseName" class="form-control" required></div>
+            <div class="form-group"><label>Course Code</label><input type="text" id="courseCode" class="form-control" placeholder="Optional"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category</label>
+              <select id="courseCategory" class="form-control">
+                <option value="Basic Training">Basic Training</option>
+                <option value="Advanced Training">Advanced Training</option>
+                <option value="Leadership">Leadership</option>
+                <option value="Specialist">Specialist</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Instructor</label><input type="text" id="courseInstructor" class="form-control"></div>
+          </div>
+          <div class="form-group"><label>Description</label><textarea id="courseDescription" class="form-control" rows="3"></textarea></div>
+          <div class="form-row">
+            <div class="form-group"><label>Start Date</label><input type="date" id="courseStartDate" class="form-control"></div>
+            <div class="form-group"><label>End Date</label><input type="date" id="courseEndDate" class="form-control"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Location</label><input type="text" id="courseLocation" class="form-control"></div>
+            <div class="form-group"><label>Max Participants</label><input type="number" id="courseMaxParticipants" class="form-control" value="20"></div>
+          </div>
+          <div class="form-group">
+            <label>Course Details URL</label>
+            <input type="url" id="courseDetailsUrl" class="form-control" placeholder="https://drive.google.com/...">
+            <small class="form-text">Link to course syllabus, outline, or information (visible to all logged-in users)</small>
+          </div>
+          <div class="form-group">
+            <label>Course Materials URL</label>
+            <input type="url" id="courseMaterialsUrl" class="form-control" placeholder="https://drive.google.com/...">
+            <small class="form-text">Link to downloadable course content (only visible to approved/registered users)</small>
+          </div>
+          <div class="form-group"><label>Prerequisites</label><input type="text" id="coursePrerequisites" class="form-control" placeholder="e.g., Star 1, First Aid Cert"></div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="courseStatus" class="form-control"><option value="Open">Open</option><option value="Closed">Closed</option><option value="Completed">Completed</option></select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('courseModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCourse()">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Exam Modal -->
+  <div id="examModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="examModalTitle">Add Star Exam Result</h3>
+        <button class="modal-close" onclick="closeModal('examModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="examForm">
+          <input type="hidden" id="examId">
+          <div class="form-group"><label>Cadet ID / Reg # *</label><input type="text" id="examCadetId" class="form-control" required></div>
+          <div class="form-group">
+            <label>Exam Type *</label>
+            <select id="examType" class="form-control" required onchange="toggleExamSubjects()">
+              <option value="">Select Type</option>
+              <option value="Star 1">Star 1</option>
+              <option value="Star 2">Star 2</option>
+              <option value="Star 3">Star 3</option>
+              <option value="Star 4">Star 4</option>
+              <option value="Master Cadet">Master Cadet</option>
+            </select>
+          </div>
+          <!-- Subject Pass/Fail Checkboxes -->
+          <div id="examSubjectsGroup" class="form-group" style="display:none;">
+            <label>Subjects Passed</label>
+            <div class="exam-subjects-grid">
+              <label class="subject-check"><input type="checkbox" id="examDR"> <span>DR</span><small>Drill</small></label>
+              <label class="subject-check"><input type="checkbox" id="examUMC"> <span>UMC</span><small>Use of Map and Compass</small></label>
+              <label class="subject-check" id="examSAAGroup"><input type="checkbox" id="examSAA"> <span>SAA</span><small>Skill At Arms</small></label>
+              <label class="subject-check"><input type="checkbox" id="examFC"> <span>FC</span><small>Field Craft</small></label>
+              <label class="subject-check"><input type="checkbox" id="examAT"> <span>AT</span><small>Adventure Training</small></label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Exam Date *</label><input type="date" id="examDate" class="form-control" required></div>
+            <div class="form-group"><label>Score</label><input type="number" id="examScore" class="form-control" step="0.01" min="0" max="100"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Examiner</label><input type="text" id="examiner" class="form-control"></div>
+            <div class="form-group">
+              <label>Status</label>
+              <select id="examStatus" class="form-control">
+                <option value="Pass">Pass</option>
+                <option value="Fail">Fail</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('examModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveExam()">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Star Exam Import Modal -->
+  <div id="starExamImportModal" class="modal-overlay">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3><i class="fas fa-file-import"></i> Import Star Exam Results</h3>
+        <button class="modal-close" onclick="closeModal('starExamImportModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Import Method Tabs -->
+        <div class="import-method-tabs">
+          <button class="import-tab active" onclick="switchImportMethod('ttcf')" id="importTabTTCF">
+            <i class="fas fa-file-excel"></i> From TTCF Excel
+          </button>
+          <button class="import-tab" onclick="switchImportMethod('manual')" id="importTabManual">
+            <i class="fas fa-table"></i> From Import Sheet
+          </button>
+        </div>
+
+        <!-- Method 1: TTCF Excel Sheets -->
+        <div id="importMethodTTCF" class="import-method-panel">
+          <div class="import-instructions">
+            <h4><i class="fas fa-file-excel"></i> Import from TTCF Star Exam Spreadsheet</h4>
+            <p>This reads directly from <strong>STAR_1</strong>, <strong>STAR_2</strong>, and <strong>STAR_3</strong> sheets — the same format used in the TTCF Training Department compilation file.</p>
+            <div class="import-steps">
+              <div class="import-step">
+                <span class="step-num">1</span>
+                <div>
+                  <strong>Open your TTCF Excel file</strong>
+                  <small>The file with STAR_1, STAR_2, STAR_3 sheets</small>
+                </div>
+              </div>
+              <div class="import-step">
+                <span class="step-num">2</span>
+                <div>
+                  <strong>Copy each sheet into this Google Spreadsheet</strong>
+                  <small>Right-click the sheet tab → "Copy to" → this spreadsheet, OR copy-paste all data keeping the sheet names STAR_1, STAR_2, STAR_3</small>
+                </div>
+              </div>
+              <div class="import-step">
+                <span class="step-num">3</span>
+                <div>
+                  <strong>Click "Run TTCF Import" below</strong>
+                  <small>All 3 sheets will be processed. Duplicates are automatically skipped.</small>
+                </div>
+              </div>
+            </div>
+            <div class="import-notes">
+              <p><strong>Expected TTCF format:</strong></p>
+              <div class="import-template-preview">
+                <table class="table table-sm">
+                  <thead><tr><th>SER</th><th>REG NO</th><th>RANK</th><th>LAST NAME</th><th>FIRST NAME</th><th>BN</th><th>UNIT</th><th>STAR LEVEL</th><th>DR</th><th>UMC</th><th>SAA</th><th>FC</th><th>AT</th><th>ACHIEVED</th></tr></thead>
+                  <tbody>
+                    <tr><td>1</td><td>29097</td><td>PVT</td><td>GREAVES</td><td>JAYDON</td><td>1TTCF</td><td>BSS</td><td>1</td><td></td><td></td><td>P</td><td></td><td></td><td></td></tr>
+                    <tr><td>2</td><td>29123</td><td>PVT</td><td>DRIGGS</td><td>TRISTAN</td><td>1TTCF</td><td>ALPHA</td><td>1</td><td>P</td><td>P</td><td>P</td><td>P</td><td>P</td><td></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <ul>
+                <li>Star 3 sheets may omit the <strong>SAA</strong> column — handled automatically</li>
+                <li>Header variations (SURNAME vs LAST NAME, REG. NO. vs REG NO) are handled</li>
+                <li>Lowercase <code>p</code> is treated the same as <code>P</code></li>
+                <li>SER and ACHIEVED columns are ignored</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Method 2: Manual Import Sheet -->
+        <div id="importMethodManual" class="import-method-panel" style="display:none;">
+          <div class="import-instructions">
+            <h4><i class="fas fa-table"></i> Import from Standardized Sheet</h4>
+            <p>Use the <strong>"Star Exam Import"</strong> sheet with standardized headers for custom or reformatted data.</p>
+            <div class="import-template-preview">
+              <table class="table table-sm">
+                <thead><tr><th>REG_NO</th><th>RANK</th><th>LAST_NAME</th><th>FIRST_NAME</th><th>BN</th><th>UNIT</th><th>STAR_LEVEL</th><th>DR</th><th>UMC</th><th>SAA</th><th>FC</th><th>AT</th></tr></thead>
+                <tbody>
+                  <tr><td>29097</td><td>PVT</td><td>GREAVES</td><td>JAYDON</td><td>1TTCF</td><td>BSS</td><td>1</td><td></td><td></td><td>P</td><td></td><td></td></tr>
+                  <tr><td>27277</td><td>SGT</td><td>CHARLES</td><td>KENTON</td><td>1TTCF</td><td>BRAVO</td><td>3</td><td>P</td><td>P</td><td></td><td>P</td><td>P</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="import-notes">
+              <ul>
+                <li><strong>STAR_LEVEL:</strong> 1, 2, 3, 4, or MC (Master Cadet)</li>
+                <li>Enter <code>P</code> for Pass, leave blank for not passed</li>
+                <li>Duplicates (same REG_NO + STAR_LEVEL) are skipped</li>
+              </ul>
+            </div>
+            <button class="btn btn-secondary" onclick="createStarExamImportSheet()" style="margin-top: 12px;">
+              <i class="fas fa-plus-circle"></i> Create Import Sheet Template
+            </button>
+          </div>
+        </div>
+
+        <!-- Shared Progress/Results -->
+        <div id="importProgress" style="display:none; margin-top: 16px;">
+          <div class="progress-bar-container">
+            <div id="importProgressBar" class="progress-bar" style="width: 0%"></div>
+          </div>
+          <p id="importProgressText" class="text-muted" style="margin-top: 8px; font-size: 0.85rem;">Processing...</p>
+        </div>
+        <div id="importResultSummary" style="display:none; margin-top: 12px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('starExamImportModal')">Close</button>
+        <button class="btn btn-primary" onclick="runStarExamImport()" id="runImportBtn">
+          <i class="fas fa-upload"></i> <span id="runImportBtnLabel">Run TTCF Import</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Generic Category Result Modal -->
+  <div id="categoryResultModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="categoryResultModalTitle"><i class="fas fa-plus"></i> Add Result</h3>
+        <button class="modal-close" onclick="closeCategoryResultModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="categoryResultForm">
+          <input type="hidden" id="categoryResultId">
+          <input type="hidden" id="categoryResultCategory">
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Competition Year *</label>
+              <select id="categoryYear" class="form-control" required>
+                <option value="2025">2025-2026</option>
+                <option value="2024">2024-2025</option>
+                <option value="2023">2023-2024</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Position *</label>
+              <select id="categoryPosition" class="form-control" required>
+                <option value="">Select Position</option>
+                <option value="1">1st Place</option>
+                <option value="2">2nd Place</option>
+                <option value="3">3rd Place</option>
+                <option value="4">4th Place</option>
+                <option value="5">5th Place</option>
+                <option value="6">6th Place</option>
+                <option value="7">7th Place</option>
+                <option value="8">8th Place</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Battalion *</label>
+              <select id="categoryBattalion" class="form-control" required onchange="filterSchoolsByBattalion('category')">
+                <option value="">Select Battalion</option>
+                <option value="First Battalion">First Battalion</option>
+                <option value="Second Battalion">Second Battalion</option>
+                <option value="Third Battalion">Third Battalion</option>
+                <option value="Fourth Battalion">Fourth Battalion</option>
+                <option value="Fifth Battalion">Fifth Battalion</option>
+                <option value="Sixth Battalion">Sixth Battalion</option>
+                <option value="Maritime Battalion">Maritime Battalion</option>
+                <option value="Service Support Battalion">Service Support Battalion</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>School/Unit *</label>
+              <select id="categorySchoolUnit" class="form-control" required onchange="filterPlatoonsBySchool('category')">
+                <option value="">Select School/Unit</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Platoon Number *</label>
+              <select id="categoryPlatoon" class="form-control" required>
+                <option value="">Select Platoon</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Score *</label>
+              <input type="number" id="categoryScore" class="form-control" min="0" max="100" required placeholder="Enter score (0-100)">
+            </div>
+          </div>
+
+          <!-- Individual Cadet Info (for individual events) -->
+          <div id="individualCadetSection">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Regimental Number</label>
+                <input type="text" id="categoryRegNo" class="form-control" placeholder="e.g., 12345">
+              </div>
+              <div class="form-group">
+                <label>Rank</label>
+                <select id="categoryRank" class="form-control">
+                  <option value="">Select Rank</option>
+                  <option value="Cadet">Cadet</option>
+                  <option value="Lance Corporal">Lance Corporal</option>
+                  <option value="Corporal">Corporal</option>
+                  <option value="Sergeant">Sergeant</option>
+                  <option value="Staff Sergeant">Staff Sergeant</option>
+                  <option value="Warrant Officer II">Warrant Officer II</option>
+                  <option value="Warrant Officer I">Warrant Officer I</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Cadet Name</label>
+              <input type="text" id="categoryCadetName" class="form-control" placeholder="Full name">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea id="categoryNotes" class="form-control" rows="2" placeholder="Optional notes"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeCategoryResultModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCategoryResult()">
+          <i class="fas fa-save"></i> Save Result
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orienteering Team Modal -->
+  <div id="orienteeringTeamModal" class="modal-overlay">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 id="orienteeringTeamModalTitle"><i class="fas fa-users"></i> Create Orienteering Team</h3>
+        <button class="modal-close" onclick="closeOrienteeringTeamModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="orienteeringTeamForm">
+          <input type="hidden" id="orienteeringTeamId">
+          
+          <!-- Team Info -->
+          <div class="form-section">
+            <h4><i class="fas fa-info-circle"></i> Team Information</h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Competition Year *</label>
+                <select id="teamYear" class="form-control" required>
+                  <option value="2025">2025-2026</option>
+                  <option value="2024">2024-2025</option>
+                  <option value="2023">2023-2024</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Team Name</label>
+                <input type="text" id="teamName" class="form-control" placeholder="Auto-generated if empty">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Battalion *</label>
+                <select id="teamBattalion" class="form-control" required onchange="filterSchoolsByBattalion('team')">
+                  <option value="">Select Battalion</option>
+                  <option value="First Battalion">First Battalion</option>
+                  <option value="Second Battalion">Second Battalion</option>
+                  <option value="Third Battalion">Third Battalion</option>
+                  <option value="Fourth Battalion">Fourth Battalion</option>
+                  <option value="Fifth Battalion">Fifth Battalion</option>
+                  <option value="Sixth Battalion">Sixth Battalion</option>
+                  <option value="Maritime Battalion">Maritime Battalion</option>
+                  <option value="Service Support Battalion">Service Support Battalion</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>School/Unit *</label>
+                <select id="teamSchoolUnit" class="form-control" required onchange="filterPlatoonsBySchool('team')">
+                  <option value="">Select School/Unit</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Platoon Number *</label>
+              <select id="teamPlatoon" class="form-control" required>
+                <option value="">Select Platoon</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Team Members (3 cadets) -->
+          <div class="form-section">
+            <h4><i class="fas fa-user-friends"></i> Team Members (3 Cadets Required)</h4>
+            
+            <!-- Member 1 -->
+            <div class="team-member-card">
+              <div class="member-header">
+                <span class="member-number">1</span>
+                <span class="member-label">Team Member 1</span>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Reg No. *</label>
+                  <input type="text" id="member1RegNo" class="form-control" required placeholder="Reg #">
+                </div>
+                <div class="form-group">
+                  <label>Rank *</label>
+                  <select id="member1Rank" class="form-control" required>
+                    <option value="">Select</option>
+                    <option value="Recruit">Recruit</option>
+                    <option value="Cadet">Cadet</option>
+                    <option value="Lance Corporal">L/Cpl</option>
+                    <option value="Corporal">Cpl</option>
+                    <option value="Sergeant">Sgt</option>
+                    <option value="Staff Sergeant">S/Sgt</option>
+                    <option value="OS">OS</option>
+                    <option value="OR">OR</option>
+                    <option value="AB">AB</option>
+                    <option value="AR">AR</option>
+                    <option value="LS">LS</option>
+                    <option value="LR">LR</option>
+                    <option value="PO">PO</option>
+                    <option value="CPO">CPO</option>
+                    <option value="AC">AC</option>
+                    <option value="CWO2">CWO2</option>
+                    <option value="SAC">SAC</option>
+                    <option value="Flt. Sgt.">Flt. Sgt.</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Surname *</label>
+                  <input type="text" id="member1Surname" class="form-control" required placeholder="Surname">
+                </div>
+                <div class="form-group">
+                  <label>First Name *</label>
+                  <input type="text" id="member1FirstName" class="form-control" required placeholder="First Name">
+                </div>
+              </div>
+            </div>
+
+            <!-- Member 2 -->
+            <div class="team-member-card">
+              <div class="member-header">
+                <span class="member-number">2</span>
+                <span class="member-label">Team Member 2</span>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Reg No. *</label>
+                  <input type="text" id="member2RegNo" class="form-control" required placeholder="Reg #">
+                </div>
+                <div class="form-group">
+                  <label>Rank *</label>
+                  <select id="member2Rank" class="form-control" required>
+                    <option value="">Select</option>
+                    <option value="Recruit">Recruit</option>
+                    <option value="Cadet">Cadet</option>
+                    <option value="Lance Corporal">L/Cpl</option>
+                    <option value="Corporal">Cpl</option>
+                    <option value="Sergeant">Sgt</option>
+                    <option value="Staff Sergeant">S/Sgt</option>
+                    <option value="OS">OS</option>
+                    <option value="OR">OR</option>
+                    <option value="AB">AB</option>
+                    <option value="AR">AR</option>
+                    <option value="LS">LS</option>
+                    <option value="LR">LR</option>
+                    <option value="PO">PO</option>
+                    <option value="CPO">CPO</option>
+                    <option value="AC">AC</option>
+                    <option value="CWO2">CWO2</option>
+                    <option value="SAC">SAC</option>
+                    <option value="Flt. Sgt.">Flt. Sgt.</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Surname *</label>
+                  <input type="text" id="member2Surname" class="form-control" required placeholder="Surname">
+                </div>
+                <div class="form-group">
+                  <label>First Name *</label>
+                  <input type="text" id="member2FirstName" class="form-control" required placeholder="First Name">
+                </div>
+              </div>
+            </div>
+
+            <!-- Member 3 -->
+            <div class="team-member-card">
+              <div class="member-header">
+                <span class="member-number">3</span>
+                <span class="member-label">Team Member 3</span>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Reg No. *</label>
+                  <input type="text" id="member3RegNo" class="form-control" required placeholder="Reg #">
+                </div>
+                <div class="form-group">
+                  <label>Rank *</label>
+                  <select id="member3Rank" class="form-control" required>
+                    <option value="">Select</option>
+                    <option value="Recruit">Recruit</option>
+                    <option value="Cadet">Cadet</option>
+                    <option value="Lance Corporal">L/Cpl</option>
+                    <option value="Corporal">Cpl</option>
+                    <option value="Sergeant">Sgt</option>
+                    <option value="Staff Sergeant">S/Sgt</option>
+                    <option value="OS">OS</option>
+                    <option value="OR">OR</option>
+                    <option value="AB">AB</option>
+                    <option value="AR">AR</option>
+                    <option value="LS">LS</option>
+                    <option value="LR">LR</option>
+                    <option value="PO">PO</option>
+                    <option value="CPO">CPO</option>
+                    <option value="AC">AC</option>
+                    <option value="CWO2">CWO2</option>
+                    <option value="SAC">SAC</option>
+                    <option value="Flt. Sgt.">Flt. Sgt.</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Surname *</label>
+                  <input type="text" id="member3Surname" class="form-control" required placeholder="Surname">
+                </div>
+                <div class="form-group">
+                  <label>First Name *</label>
+                  <input type="text" id="member3FirstName" class="form-control" required placeholder="First Name">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Team Scores -->
+          <div class="form-section">
+            <h4><i class="fas fa-star"></i> Team Scores</h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Time Start</label>
+                <input type="time" id="teamTimeStart" class="form-control" onchange="calculateTeamTime()">
+              </div>
+              <div class="form-group">
+                <label>Time Finished</label>
+                <input type="time" id="teamTimeFinished" class="form-control" onchange="calculateTeamTime()">
+              </div>
+              <div class="form-group">
+                <label>Total Time</label>
+                <input type="text" id="teamTotalTime" class="form-control" readonly placeholder="Auto-calculated">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Markers Found (0-6) *</label>
+                <input type="number" id="teamMarkersFound" class="form-control" min="0" max="6" value="0" required onchange="calculateTeamTotal()">
+                <small class="form-text">× 8 pts = <span id="markersScoreDisplay">0</span> pts</small>
+              </div>
+              <div class="form-group">
+                <label>Time Score (0-30)</label>
+                <input type="number" id="teamTimeScore" class="form-control" min="0" max="30" value="30" readonly>
+                <small class="form-text">30 pts if ≤1:15:00, -1 per 5 mins over</small>
+              </div>
+              <div class="form-group">
+                <label>Grid Refs (0-17) *</label>
+                <input type="number" id="teamGridRefs" class="form-control" min="0" max="17" value="0" required onchange="calculateTeamTotal()">
+                <small class="form-text">1 pt per grid reference (max 17)</small>
+              </div>
+              <div class="form-group">
+                <label>Team Equipment (0-5) *</label>
+                <input type="number" id="teamEquipment" class="form-control" min="0" max="5" value="0" required onchange="calculateTeamTotal()">
+                <small class="form-text">5 pts for complete equipment</small>
+              </div>
+            </div>
+            <div class="total-score-display">
+              <span class="label">Team Total Score:</span>
+              <span class="score" id="teamTotalScore">0</span>
+              <span class="max">/ 100</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea id="teamNotes" class="form-control" rows="2" placeholder="Optional notes about the team"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeOrienteeringTeamModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveOrienteeringTeam()">
+          <i class="fas fa-save"></i> Save Team
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Individual Orienteering Score Modal (for editing individual within a team) -->
+  <div id="orienteeringIndividualModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="fas fa-user"></i> Edit Individual Score</h3>
+        <button class="modal-close" onclick="closeOrienteeringIndividualModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="orienteeringIndividualForm">
+          <input type="hidden" id="orienteeringIndividualId">
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Reg No.</label>
+              <input type="text" id="indivRegNo" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" id="indivName" class="form-control" readonly>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Time Start</label>
+              <input type="time" id="indivTimeStart" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Time Finished</label>
+              <input type="time" id="indivTimeFinished" class="form-control" onchange="calculateIndivTime()">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Markers Found (0-6)</label>
+              <input type="number" id="indivMarkers" class="form-control" min="0" max="6" value="0" onchange="calculateIndivTotal()">
+            </div>
+            <div class="form-group">
+              <label>Time Score (0-30)</label>
+              <input type="number" id="indivTimeScore" class="form-control" min="0" max="30" value="0" onchange="calculateIndivTotal()">
+            </div>
+            <div class="form-group">
+              <label>Grid Refs (0-22)</label>
+              <input type="number" id="indivGridRefs" class="form-control" min="0" max="22" value="0" onchange="calculateIndivTotal()">
+            </div>
+          </div>
+
+          <div class="total-score-display">
+            <span class="label">Total:</span>
+            <span class="score" id="indivTotalScore">0</span>
+            <span class="max">/ 100</span>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeOrienteeringIndividualModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveOrienteeringIndividual()">
+          <i class="fas fa-save"></i> Save
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Syllabus Modal -->
+  <div id="syllabusModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add Syllabus</h3>
+        <button class="modal-close" onclick="closeModal('syllabusModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="syllabusForm">
+          <div class="form-group"><label>Title *</label><input type="text" id="syllabusTitle" class="form-control" required></div>
+          <div class="form-row">
+            <div class="form-group"><label>Category</label><input type="text" id="syllabusCategory" class="form-control"></div>
+            <div class="form-group">
+              <label>Star Level</label>
+              <select id="syllabusStarLevel" class="form-control">
+                <option value="">Select</option>
+                <option value="Star 1">Star 1</option>
+                <option value="Star 2">Star 2</option>
+                <option value="Star 3">Star 3</option>
+                <option value="Star 4">Star 4</option>
+                <option value="Master Cadet">Master Cadet</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label>Description</label><textarea id="syllabusDescription" class="form-control" rows="3"></textarea></div>
+          <div class="form-row">
+            <div class="form-group"><label>File URL</label><input type="url" id="syllabusFileUrl" class="form-control"></div>
+            <div class="form-group"><label>Version</label><input type="text" id="syllabusVersion" class="form-control" value="1.0"></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('syllabusModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveSyllabus()">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Manual Modal -->
+  <div id="manualModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add Manual</h3>
+        <button class="modal-close" onclick="closeModal('manualModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="manualForm">
+          <div class="form-group"><label>Title *</label><input type="text" id="manualTitle" class="form-control" required></div>
+          <div class="form-group"><label>Category</label><input type="text" id="manualCategory" class="form-control"></div>
+          <div class="form-group"><label>Description</label><textarea id="manualDescription" class="form-control" rows="3"></textarea></div>
+          <div class="form-row">
+            <div class="form-group"><label>File URL</label><input type="url" id="manualFileUrl" class="form-control"></div>
+            <div class="form-group"><label>Version</label><input type="text" id="manualVersion" class="form-control" value="1.0"></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('manualModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveManual()">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Order Modal -->
+  <div id="orderModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add Order</h3>
+        <button class="modal-close" onclick="closeModal('orderModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="orderForm">
+          <div class="form-group"><label>Title *</label><input type="text" id="orderTitle" class="form-control" required></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Order Type</label>
+              <select id="orderType" class="form-control">
+                <option value="">Select</option>
+                <option value="Force's Orders">Force's Orders</option>
+                <option value="Admin Instructions">Admin Instructions</option>
+                <option value="Operational Updates">Operational Updates</option>
+                <option value="Warning Orders">Warning Orders</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Reference Number</label><input type="text" id="orderRefNumber" class="form-control" placeholder="e.g. SO-2026-001"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Effective Date</label><input type="date" id="orderEffectiveDate" class="form-control"></div>
+            <div class="form-group"><label>Issued By</label><input type="text" id="orderIssuedBy" class="form-control"></div>
+          </div>
+          <div class="form-group"><label>Description</label><textarea id="orderDescription" class="form-control" rows="3"></textarea></div>
+          <div class="form-group"><label>File URL</label><input type="url" id="orderFileUrl" class="form-control"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('orderModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveOrder()">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Policy Modal -->
+  <div id="policyModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add Policy</h3>
+        <button class="modal-close" onclick="closeModal('policyModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="policyForm">
+          <div class="form-group"><label>Title *</label><input type="text" id="policyTitle" class="form-control" required></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category</label>
+              <select id="policyCategory" class="form-control">
+                <option value="">Select</option>
+                <option value="Discipline">Discipline</option>
+                <option value="Conduct">Conduct</option>
+                <option value="Uniform & Dress">Uniform & Dress</option>
+                <option value="Training">Training</option>
+                <option value="Health & Safety">Health & Safety</option>
+                <option value="Administration">Administration</option>
+                <option value="General">General</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Reference Number</label><input type="text" id="policyRefNumber" class="form-control" placeholder="e.g. POL-2026-001"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Effective Date</label><input type="date" id="policyEffectiveDate" class="form-control"></div>
+            <div class="form-group">
+              <label>Status</label>
+              <select id="policyStatus" class="form-control">
+                <option value="Active">Active</option>
+                <option value="Draft">Draft</option>
+                <option value="Under Review">Under Review</option>
+                <option value="Superseded">Superseded</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label>Description</label><textarea id="policyDescription" class="form-control" rows="3"></textarea></div>
+          <div class="form-group"><label>File URL</label><input type="url" id="policyFileUrl" class="form-control"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('policyModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="savePolicy()">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Announcement Modal -->
+  <div id="announcementModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="announcementModalTitle">New Announcement</h3>
+        <button class="modal-close" onclick="closeModal('announcementModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="announcementForm">
+          <input type="hidden" id="announcementId">
+          <div class="form-group"><label>Title *</label><input type="text" id="announcementTitle" class="form-control" required></div>
+          <div class="form-group"><label>Content *</label><textarea id="announcementContent" class="form-control" rows="4" required></textarea></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category</label>
+              <select id="announcementCategory" class="form-control">
+                <option value="General">General</option>
+                <option value="Training">Training</option>
+                <option value="Events">Events</option>
+                <option value="Administrative">Administrative</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Priority</label>
+              <select id="announcementPriority" class="form-control">
+                <option value="Low">Low</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="High">High</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Target Audience</label>
+            <select id="announcementAudience" class="form-control">
+              <option value="All">All</option>
+              <option value="Cadets">Cadets</option>
+              <option value="Officers">Officers</option>
+              <option value="Admin">Admin Only</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Start Date</label><input type="date" id="announcementStartDate" class="form-control"></div>
+            <div class="form-group"><label>End Date</label><input type="date" id="announcementEndDate" class="form-control"></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('announcementModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveAnnouncement()">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Reviews Modal -->
+  <div id="reviewModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="reviewModalTitle">Add View/Review</h3>
+        <button class="modal-close" onclick="closeModal('reviewModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="reviewForm">
+          <input type="hidden" id="reviewId">
+          <div class="form-group">
+            <label>Type *</label>
+            <select id="reviewType" class="form-control" required>
+              <option value="Quote">Quote</option>
+              <option value="News Article">News Article</option>
+              <option value="Social Media">Social Media Post</option>
+              <option value="Press Release">Press Release</option>
+              <option value="Testimonial">Testimonial</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Quote/Excerpt *</label>
+            <textarea id="reviewQuote" class="form-control" rows="4" required placeholder="Enter the quote or key excerpt from the review..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Author/Source *</label>
+              <input type="text" id="reviewAuthor" class="form-control" required placeholder="e.g., John Smith, Trinidad Express">
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="reviewDate" class="form-control">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>External URL</label>
+            <input type="url" id="reviewUrl" class="form-control" placeholder="https://...">
+            <small class="form-text">Link to the full article or post (optional)</small>
+          </div>
+          <div class="form-group">
+            <label>Image URL</label>
+            <input type="url" id="reviewImageUrl" class="form-control" placeholder="https://...">
+            <small class="form-text">Link to an image for this review (optional)</small>
+          </div>
+          <div class="form-group">
+            <label>Featured</label>
+            <select id="reviewFeatured" class="form-control">
+              <option value="No">No</option>
+              <option value="Yes">Yes - Show prominently</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('reviewModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveReview()">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Event Modal -->
+  <div id="eventModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="eventModalTitle">Add Event</h3>
+        <button class="modal-close" onclick="closeModal('eventModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="eventForm">
+          <input type="hidden" id="eventId">
+          <div class="form-group"><label>Title *</label><input type="text" id="eventTitle" class="form-control" required></div>
+          <div class="form-group"><label>Description</label><textarea id="eventDescription" class="form-control" rows="3"></textarea></div>
+          <div class="form-group">
+            <label>Event Type</label>
+            <select id="eventType" class="form-control">
+              <option value="Training">Training</option>
+              <option value="Competition">Competition</option>
+              <option value="Parade">Parade</option>
+              <option value="Meeting">Meeting</option>
+              <option value="Camp">Camp</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Start Date *</label><input type="date" id="eventStartDate" class="form-control" required></div>
+            <div class="form-group"><label>End Date</label><input type="date" id="eventEndDate" class="form-control"></div>
+          </div>
+          <div class="form-group"><label>Location</label><input type="text" id="eventLocation" class="form-control"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('eventModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEvent()">Save</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/notify.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+</body>
+</html>
