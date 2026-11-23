@@ -4124,7 +4124,7 @@ function logout() {
         html += '<div class="date-event-item" onclick="showEventDetailsByIndex(' + evtIdx + ')">' +
           '<div class="date-event-type"><span class="badge badge-' + getEventBadgeClass(e.event_type) + '">' + escapeHtml(e.event_type || 'Event') + '</span></div>' +
           '<div class="date-event-info"><h4>' + escapeHtml(e.title || '') + '</h4>' +
-          '<p><i class="fas fa-clock"></i> ' + formatEventTime(e.start_date) + (e.location ? ' &bull; <i class="fas fa-map-marker-alt"></i> ' + escapeHtml(e.location) : '') + '</p></div>' +
+          '<p><i class="fas fa-clock"></i> ' + eventTimeLabel(e) + (e.location ? ' &bull; <i class="fas fa-map-marker-alt"></i> ' + escapeHtml(e.location) : '') + '</p></div>' +
           '<i class="fas fa-chevron-right" style="color:#ccc;"></i></div>';
       }
       html += '</div>';
@@ -4171,7 +4171,7 @@ function logout() {
     
     html += '<div class="event-details-body" style="margin-top:20px;">';
     html += '<div class="event-detail-row" style="display:flex;gap:15px;align-items:flex-start;"><i class="fas fa-calendar" style="color:var(--primary);width:20px;margin-top:3px;"></i><div><strong style="font-size:11px;color:#888;text-transform:uppercase;">Date</strong><p style="margin:3px 0 0;">' + dateStr + '</p></div></div>';
-    html += '<div class="event-detail-row" style="display:flex;gap:15px;align-items:flex-start;margin-top:15px;"><i class="fas fa-clock" style="color:var(--primary);width:20px;margin-top:3px;"></i><div><strong style="font-size:11px;color:#888;text-transform:uppercase;">Time</strong><p style="margin:3px 0 0;">' + formatEventTime(event.start_date) + (endDate ? ' - ' + formatEventTime(event.end_date) : '') + '</p></div></div>';
+    html += '<div class="event-detail-row" style="display:flex;gap:15px;align-items:flex-start;margin-top:15px;"><i class="fas fa-clock" style="color:var(--primary);width:20px;margin-top:3px;"></i><div><strong style="font-size:11px;color:#888;text-transform:uppercase;">Time</strong><p style="margin:3px 0 0;">' + eventTimeLabel(event) + '</p></div></div>';
     
     if (event.location) {
       html += '<div class="event-detail-row" style="display:flex;gap:15px;align-items:flex-start;margin-top:15px;"><i class="fas fa-map-marker-alt" style="color:var(--primary);width:20px;margin-top:3px;"></i><div><strong style="font-size:11px;color:#888;text-transform:uppercase;">Location</strong><p style="margin:3px 0 0;">' + escapeHtml(event.location) + '</p></div></div>';
@@ -4210,6 +4210,26 @@ function logout() {
     }
   }
 
+  function fmt12(hhmm) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
+    if (!m) return '';
+    var h = parseInt(m[1], 10), ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return h + ':' + m[2] + ' ' + ap;
+  }
+  function eventTimeLabel(e) {
+    if (e && e.start_time) return fmt12(e.start_time) + (e.end_time ? ' \u2013 ' + fmt12(e.end_time) : '');
+    return formatEventTime(e && e.start_date);   // legacy events with a time inside the date
+  }
+  function toggleEventAllDay() {
+    var all = document.getElementById('eventAllDay').checked;
+    var a = document.getElementById('eventStartTime'), b = document.getElementById('eventEndTime');
+    a.disabled = all; b.disabled = all;
+    if (all) { a.value = ''; b.value = ''; }
+    document.getElementById('eventTimeRow').style.opacity = all ? '.5' : '1';
+  }
+  window.toggleEventAllDay = toggleEventAllDay;
+
   function formatEventTime(dateStr) {
     if (!dateStr) return 'All Day';
     var date = new Date(dateStr);
@@ -4237,6 +4257,7 @@ function logout() {
   function showAddEventModalForDate(year, month, day) {
     document.getElementById('eventModalTitle').textContent = 'Add Event';
     document.getElementById('eventForm').reset();
+    toggleEventAllDay();
     document.getElementById('eventId').value = '';
     
     var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
@@ -4426,6 +4447,7 @@ function logout() {
             urgencyLabel +
             '</div>' +
             '<h4 class="event-card-title">' + escapeHtml(e.title || 'Untitled Event') + '</h4>' +
+            '<p class="event-card-location"><i class="fas fa-clock"></i> ' + eventTimeLabel(e) + '</p>' +
             (e.location ? '<p class="event-card-location"><i class="fas fa-map-marker-alt"></i> ' + escapeHtml(e.location) + '</p>' : '') +
             (e.description ? '<p class="event-card-desc">' + escapeHtml(e.description).substring(0, 100) + (e.description.length > 100 ? '...' : '') + '</p>' : '') +
             endDateHtml +
@@ -4514,6 +4536,7 @@ function logout() {
     function showAddEventModal() {
     document.getElementById('eventModalTitle').textContent = 'Add Event';
     document.getElementById('eventForm').reset();
+    toggleEventAllDay();
     document.getElementById('eventId').value = '';
     openModal('eventModal');
   }
@@ -4548,6 +4571,10 @@ function logout() {
           }
         }
         
+        document.getElementById('eventStartTime').value = event.start_time || '';
+        document.getElementById('eventEndTime').value = event.end_time || '';
+        document.getElementById('eventAllDay').checked = !event.start_time;
+        toggleEventAllDay();
         openModal('eventModal');
         hideLoading();
       })
@@ -4566,8 +4593,14 @@ function logout() {
       eventType: document.getElementById('eventType').value,
       startDate: document.getElementById('eventStartDate').value,
       endDate: document.getElementById('eventEndDate').value,
+      startTime: document.getElementById('eventAllDay').checked ? '' : document.getElementById('eventStartTime').value,
+      endTime: document.getElementById('eventAllDay').checked ? '' : document.getElementById('eventEndTime').value,
       location: document.getElementById('eventLocation').value
     };
+    if (eventData.endTime && !eventData.startTime) {
+      showToast('Add a start time, or clear the end time.', 'error');
+      return;
+    }
     
     if (!eventData.title || !eventData.startDate) {
       showToast('Please fill in required fields', 'error');
