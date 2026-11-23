@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.ttcf.recon",
+        "sha256_cert_fingerprints": ["32:E2:C1:E5:32:82:AE:D7:5C:5A:8A:C9:5A:14:B3:58:07:C6:9B:7C:8E:87:46:32:C0:A9:40:D9:28:E4:18:CB"]
+      }
+    }]
