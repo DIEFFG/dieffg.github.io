@@ -1,0 +1,50 @@
+/* RECON brand: white, green, gold. Loaded last — edit the 4 variables below to retune the whole app. */
+:root {
+  --primary: #154b12; --primary-dark: #0e3409; --secondary: #1b5418;
+  --gold: #c9a227; --gold-dark: #a8861a; --gold-light: #f6ecc4; --gold-bright: #e6c65c;
+  --bg: #ffffff; --surface: #ffffff;
+}
+body { background: #fbfaf5; }
+/* sidebar: green with gold accents */
+.sidebar { background: linear-gradient(180deg, #1b5418 0%, #0e3409 100%); border-right: 3px solid var(--gold); }
+.sidebar-header h2 { color: var(--gold-bright); letter-spacing: .5px; }
+.sidebar-header .subtitle, .sidebar-header .sub-label { color: rgba(255,255,255,.85); }
+.sidebar-header { border-bottom: 1px solid rgba(201,162,39,.45); }
+.avatar { background: var(--gold); color: var(--primary-dark); }
+.nav-item i, .nav-item[data-page] i { background: rgba(201,162,39,.18) !important; color: var(--gold-bright) !important; }
+.nav-item:hover { background: rgba(201,162,39,.14); }
+.nav-item.active { background: rgba(201,162,39,.22); border-left-color: var(--gold); color: #fff; }
+.nav-item.active i { background: var(--gold) !important; color: var(--primary-dark) !important; }
+/* header + cards: white with gold rules */
+.header { background: #fff; border-bottom: 3px solid var(--gold); }
+.header h1 { color: var(--primary); }
+.card { border-top: 3px solid var(--gold); }
+.card-header { border-bottom: 1px solid var(--gold-light); }
+.card-header h3 i, .card-header h3 .fas { color: var(--gold-dark); }
+.stat-icon { background: var(--gold-light) !important; color: var(--gold-dark) !important; }
+.stat-card { border-left: 4px solid var(--gold); }
+/* buttons */
+.btn-primary { background: var(--primary); color: #fff; border: 1px solid var(--primary); }
+.btn-primary:hover { background: var(--primary-dark); box-shadow: 0 0 0 2px var(--gold); }
+.btn-outline { border-color: var(--gold); color: var(--primary); background: #fff; }
+.btn-outline:hover { background: var(--gold-light); border-color: var(--gold-dark); }
+.btn-gold, .btn-warning { background: var(--gold); color: #1c1600; border-color: var(--gold-dark); }
+th { background: var(--gold-light); color: var(--primary-dark); }
+a { color: var(--primary); }
+.notif-item.unread { background: var(--gold-light); border-left-color: var(--gold); }
+.notif-badge { background: var(--gold); color: #1c1600; }
+.bottom-nav button.active, .bottom-nav button:active { color: var(--gold-dark); }
+.form-control:focus, input:focus, select:focus, textarea:focus { border-color: var(--gold) !important; box-shadow: 0 0 0 3px rgba(201,162,39,.25) !important; outline: none; }
+/* dark mode keeps the same palette on dark green */
+[data-theme="dark"] body { background: #0b1a0a; }
+[data-theme="dark"] .header { background: #14211a; border-bottom-color: var(--gold); }
+[data-theme="dark"] .header h1 { color: var(--gold-bright); }
+[data-theme="dark"] .card-header { border-bottom-color: #3a3418; }
+[data-theme="dark"] th { background: #2a2a12; color: var(--gold-bright); }
+[data-theme="dark"] .btn-outline { background: transparent; color: var(--gold-bright); }
+[data-theme="dark"] .stat-icon { background: #2a2a12 !important; }
+[data-theme="dark"] .notif-item.unread { background: #2a2a12; }
+/* login page */
+.login-container, .container { border-top: 4px solid var(--gold); }
+.tab.active { color: var(--primary) !important; border-bottom-color: var(--gold) !important; }
+.tab:hover { color: var(--gold-dark) !important; }
