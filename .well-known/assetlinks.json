@@ -1,8 +1,18 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "com.ttcf.recon",
-        "sha256_cert_fingerprints": ["32:E2:C1:E5:32:82:AE:D7:5C:5A:8A:C9:5A:14:B3:58:07:C6:9B:7C:8E:87:46:32:C0:A9:40:D9:28:E4:18:CB"]
-      }
-    }]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.ttcf.recon",
+      "sha256_cert_fingerprints": ["32:E2:C1:E5:32:82:AE:D7:5C:5A:8A:C9:5A:14:B3:58:07:C6:9B:7C:8E:87:46:32:C0:A9:40:D9:28:E4:18:CB"]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.dieffg.twa",
+      "sha256_cert_fingerprints": ["DF:48:A9:CD:DD:75:18:DC:D0:49:43:B7:80:59:0E:1E:EC:6D:DB:19:31:5C:B8:E6:EA:A4:5B:DB:89:4D:37:56"]
+    }
+  }
+]
