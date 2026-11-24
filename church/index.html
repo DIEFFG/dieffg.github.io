@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>The Christian Sanctuary</title>
+  <meta name="description" content="Events, sermons, notices and prayer for The Christian Sanctuary.">
+  <meta name="theme-color" content="#4A1D6E">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Sanctuary">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/brand.css">
+  <script src="js/vendor/lucide.min.js"></script>
+  <script>window.lucide = window.lucide || { createIcons: function () {} };</script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+</head>
+<body>
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+  <div id="offlineBar" class="offline-bar" role="status" aria-live="polite" hidden></div>
+  <div id="updateBar" class="update-bar" hidden><span>A new version is ready.</span> <button type="button" onclick="ChurchUI.applyUpdate()">Refresh</button></div>
+  
+  <!-- ==================== LOGIN PAGE ==================== -->
+  <div class="login-page" id="loginPage" style="display: none;">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo-placeholder" role="img" aria-label="The Christian Sanctuary logo"></div>
+        <h1>Staff Sign In</h1>
+        <p>For administrators and event coordinators</p>
+      </div>
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-input" id="loginUsername" placeholder="Enter username" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="loginPassword" placeholder="Enter password" required>
+        </div>
+        <p style="text-align:right;margin:-12px 0 20px"><span onclick="showReset(true)" style="color:var(--purple-main);cursor:pointer;font-size:14px">Forgot password?</span></p>
+        <button type="submit" class="form-submit" id="loginBtn">
+          <i data-lucide="log-in"></i> Sign In
+        </button>
+      </form>
+      <form id="resetForm" style="display:none" onsubmit="handleReset(event)">
+        <div class="form-group"><label class="form-label">Username or email</label><input type="text" class="form-input" id="rsIdent" required></div>
+        <div id="rsStep2" style="display:none">
+          <p style="font-size:13px;color:var(--gray-500);margin-bottom:16px">If that account exists, a 6-digit code has been emailed to it. It is valid for 15 minutes.</p>
+          <div class="form-group"><label class="form-label">Reset code</label><input type="text" class="form-input" id="rsCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
+          <div class="form-group"><label class="form-label">New password (10+ characters, with a letter and a number)</label><input type="password" class="form-input" id="rsNew" autocomplete="new-password"></div>
+          <div class="form-group"><label class="form-label">Confirm new password</label><input type="password" class="form-input" id="rsConfirm" autocomplete="new-password"></div>
+        </div>
+        <button type="submit" class="form-submit" id="rsBtn">Send Reset Code</button>
+        <p style="text-align:center;margin-top:16px"><span onclick="showReset(false)" style="color:var(--purple-main);cursor:pointer;font-size:14px">Back to sign in</span></p>
+      </form>
+      <p style="text-align: center; margin-top: 24px; color: var(--gray-500); font-size: 14px;">
+        <span onclick="showPublicSite()" style="color: var(--purple-main); cursor: pointer;">← Back to Website</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- ==================== ADMIN PANEL ==================== -->
+  <div class="admin-layout" id="adminPanel" style="display: none;">
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleAdminSidebar()"></div>
+    
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+      <div class="sidebar-header">
+        <div class="nav-brand" onclick="showPublicSite()">
+          <div class="logo-placeholder" role="img" aria-label="The Christian Sanctuary logo"></div>
+          <div class="brand-text">
+            <span class="brand-name">TCS Admin</span>
+            <span class="brand-tagline">Management Portal</span>
+          </div>
+        </div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Overview</div>
+          <a class="sidebar-link active" data-admin-page="dashboard" onclick="showAdminPage('dashboard')">
+            <i data-lucide="layout-dashboard"></i> Dashboard
+          </a>
+        </div>
+        
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Content</div>
+          <a class="sidebar-link" data-admin-page="members" onclick="showAdminPage('members')">
+            <i data-lucide="users"></i> Members
+          </a>
+          <a class="sidebar-link" data-admin-page="events" onclick="showAdminPage('events')">
+            <i data-lucide="calendar"></i> Events
+          </a>
+          <a class="sidebar-link" data-admin-page="sermons" onclick="showAdminPage('sermons')">
+            <i data-lucide="mic-2"></i> Sermons
+          </a>
+          <a class="sidebar-link" data-admin-page="notices" onclick="showAdminPage('notices')">
+            <i data-lucide="megaphone"></i> Notices
+          </a>
+          <a class="sidebar-link" data-admin-page="prayers" onclick="showAdminPage('prayers')">
+            <i data-lucide="heart-handshake"></i> Prayer Requests
+          </a>
+          <a class="sidebar-link" data-admin-page="messages" onclick="showAdminPage('messages')">
+            <i data-lucide="inbox"></i> Messages <span id="msgBadge" style="display:none;margin-left:auto;background:var(--gold-main);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px"></span>
+          </a>
+        </div>
+        
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">System</div>
+          <a class="sidebar-link" data-admin-page="users" onclick="showAdminPage('users')">
+            <i data-lucide="shield"></i> Admin Users
+          </a>
+          <a class="sidebar-link" data-admin-page="settings" onclick="showAdminPage('settings')">
+            <i data-lucide="settings"></i> Settings
+          </a>
+        </div>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="sidebar-user-avatar"><i data-lucide="user"></i></div>
+          <div class="sidebar-user-info">
+            <div class="sidebar-user-name" id="adminUserName">Admin</div>
+            <div class="sidebar-user-role" id="adminUserRole">Administrator</div>
+          </div>
+        </div>
+        <button class="btn btn-ghost" style="width: 100%; margin-top: 12px; color: var(--gray-400);" onclick="openPasswordModal()"><i data-lucide="key"></i> Change Password</button>
+        <button class="btn btn-ghost" style="width: 100%; margin-top: 4px;" onclick="handleLogout()">
+          <i data-lucide="log-out"></i> Sign Out
+        </button>
+      </div>
+    </aside>
+    
+    <!-- Admin Main Content -->
+    <main class="admin-main">
+      <header class="admin-header">
+        <div class="admin-header-left">
+          <button class="admin-toggle-sidebar" onclick="toggleAdminSidebar()">
+            <i data-lucide="menu"></i>
+          </button>
+          <h1 class="admin-header-title" id="adminPageTitle">Dashboard</h1>
+        </div>
+        <div class="admin-header-right"><span id="adminBell"></span>
+          <button class="btn btn-outline-purple btn-sm" onclick="showPublicSite()">
+            <i data-lucide="external-link"></i> View Site
+          </button>
+        </div>
+      </header>
+      
+      <div class="admin-content">
+        <!-- Dashboard Page -->
+        <div class="admin-page active" id="admin-dashboard">
+          <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon purple"><i data-lucide="users"></i></div>
+              </div>
+              <div class="stat-card-value" id="statMembers">0</div>
+              <div class="stat-card-label">Total Members</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon gold"><i data-lucide="calendar"></i></div>
+              </div>
+              <div class="stat-card-value" id="statEvents">0</div>
+              <div class="stat-card-label">Upcoming Events</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon green"><i data-lucide="video"></i></div>
+              </div>
+              <div class="stat-card-value" id="statSermons">0</div>
+              <div class="stat-card-label">Total Sermons</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon blue"><i data-lucide="heart"></i></div>
+              </div>
+              <div class="stat-card-value" id="statPrayers">0</div>
+              <div class="stat-card-label">Prayer Requests</div>
+            </div>
+          </div>
+          
+          <div class="grid-2">
+            <div class="admin-section">
+              <h3 class="admin-section-title">Recent Members</h3>
+              <div id="recentMembersList"></div>
+            </div>
+            <div class="admin-section">
+              <h3 class="admin-section-title">Active Notices</h3>
+              <div id="activeNoticesList"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Members Page -->
+        <div class="admin-page" id="admin-members">
+          <div class="data-table-container">
+            <div class="data-table-header">
+              <h3 class="data-table-title">Church Members</h3>
+              <div class="data-table-actions">
+                <div class="data-table-search">
+                  <i data-lucide="search"></i>
+                  <input type="text" placeholder="Search members..." id="memberSearchInput" oninput="filterAdminMembers()">
+                </div>
+                <button class="btn btn-purple btn-sm" onclick="openMemberModal()">
+                  <i data-lucide="plus"></i> Add Member
+                </button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th><th>Occupation</th>
+                    <th>Status</th>
+                    <th>Family</th><th>Ministry</th><th>Joined</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="membersTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Events Page -->
+        <div class="admin-page" id="admin-events">
+          <div class="data-table-container">
+            <div class="data-table-header">
+              <h3 class="data-table-title">Events Management</h3>
+              <div class="data-table-actions">
+                <button class="btn btn-purple btn-sm" onclick="openEventModal()">
+                  <i data-lucide="plus"></i> Add Event
+                </button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Location</th>
+                    <th>Category</th><th>RSVPs</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="eventsTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Sermons Page -->
+        <div class="admin-page" id="admin-sermons">
+          <div class="data-table-container">
+            <div class="data-table-header">
+              <h3 class="data-table-title">Sermons Management</h3>
+              <div class="data-table-actions">
+                <button class="btn btn-purple btn-sm" onclick="openSermonModal()">
+                  <i data-lucide="plus"></i> Add Sermon
+                </button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Speaker</th>
+                    <th>Date</th>
+                    <th>Scripture</th>
+                    <th>Category</th><th>RSVPs</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="sermonsTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Notices Page -->
+        <div class="admin-page" id="admin-notices">
+          <div class="data-table-container">
+            <div class="data-table-header">
+              <h3 class="data-table-title">Notices & Announcements</h3>
+              <div class="data-table-actions">
+                <button class="btn btn-purple btn-sm" onclick="openNoticeModal()">
+                  <i data-lucide="plus"></i> Add Notice
+                </button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Priority</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="noticesTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Prayers Page -->
+        <div class="admin-page" id="admin-prayers">
+          <div class="data-table-container">
+            <div class="data-table-header">
+              <h3 class="data-table-title">Prayer Requests</h3>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Request</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="prayersTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Messages Page -->
+        <div class="admin-page" id="admin-messages">
+          <div class="data-table-container">
+            <div class="data-table-header"><h3 class="data-table-title">Contact Messages</h3></div>
+            <div style="overflow-x: auto;"><table class="data-table"><thead><tr><th>From</th><th>Subject</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="messagesTableBody"></tbody></table></div>
+          </div>
+        </div>
+
+        <!-- Users Page -->
+        <div class="admin-page" id="admin-users">
+          <div class="data-table-container">
+            <div class="data-table-header">
+              <h3 class="data-table-title">Admin Users</h3>
+              <div class="data-table-actions">
+                <button class="btn btn-purple btn-sm" onclick="openUserModal()">
+                  <i data-lucide="plus"></i> Add Admin
+                </button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Settings Page -->
+        <div class="admin-page" id="admin-settings">
+          <div class="admin-section">
+            <h3 class="admin-section-title">Site Content</h3>
+            <form id="settingsForm" onsubmit="saveSettings(event)"><input type="file" id="leaderPhotoFile" accept="image/*" style="display:none" onchange="handlePhotoPick(this)"><div id="settingsFields"></div><button type="submit" class="btn btn-purple" style="margin-top:20px"><i data-lucide="save"></i> Save Changes</button></form>
+          </div>
+          
+          
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== PUBLIC WEBSITE ==================== -->
+  <div id="publicSite">
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+      <div class="nav-container">
+        <div class="nav-brand" onclick="showPage('home')">
+          <div class="logo-placeholder" role="img" aria-label="The Christian Sanctuary logo"></div>
+          <div class="brand-text">
+            <span class="brand-name" data-s="churchName">The Christian Sanctuary</span>
+            <span class="brand-tagline" data-s="churchTagline">A Place of Worship</span>
+          </div>
+        </div>
+        
+        <div class="nav-menu" id="navMenu">
+          <a class="nav-link active" data-page="home" onclick="showPage('home')">Home</a>
+          <a class="nav-link" data-page="about" onclick="showPage('about')">About</a>
+          <a class="nav-link" data-page="events" onclick="showPage('events')">Events</a>
+          <a class="nav-link" data-page="sermons" onclick="showPage('sermons')">Sermons</a>
+          <a class="nav-link" data-page="notices" onclick="showPage('notices')">Notices</a>
+          <a class="nav-link" data-page="prayer" onclick="showPage('prayer')">Prayer</a>
+          <a class="nav-link" data-page="contact" onclick="showPage('contact')">Contact</a>
+          <span id="memberNav" class="member-nav"></span>
+          <button class="nav-cta" onclick="showPage('membership')">Join Us</button>
+          <a class="nav-admin-link" onclick="showLoginPage()"><i data-lucide="lock"></i> Staff</a>
+        </div>
+        
+        <button class="mobile-toggle" onclick="toggleMobileMenu()">
+          <i data-lucide="menu"></i>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Home Page -->
+      <div class="page active" id="page-home">
+        <section class="hero">
+          <div class="hero-pattern"></div>
+          <div class="hero-content">
+            <div class="hero-badge"><i data-lucide="sparkles"></i> Welcome to Our Church</div>
+            <h1 class="hero-title">Experience God's <span>Love</span> & Grace</h1>
+            <p class="hero-subtitle">Join our loving community as we grow together in faith, fellowship, and service to God and one another.</p>
+            <div class="hero-actions">
+              <button class="btn btn-primary" onclick="showPage('about')"><i data-lucide="info"></i> Learn More</button>
+              <button class="btn btn-outline" onclick="showPage('events')"><i data-lucide="calendar"></i> Upcoming Events</button>
+            </div>
+          </div>
+          <div class="hero-scroll"><i data-lucide="chevron-down"></i></div>
+        </section>
+        
+        <section class="section section-alt">
+          <div class="container">
+            <div class="section-header">
+              <div class="section-label"><i data-lucide="clock"></i> Join Us</div>
+              <h2 class="section-title">Service Times</h2>
+              <p class="section-subtitle">We'd love to worship with you</p>
+            </div>
+            <div class="service-times" id="serviceTimes"></div>
+          </div>
+        </section>
+        
+        <section class="section" id="homeFlyers" data-flyers style="display:none">
+          <div class="container">
+            <div class="section-header">
+              <div class="section-label"><i data-lucide="megaphone"></i> Save the Date</div>
+              <h2 class="section-title">What's Coming Up</h2>
+            </div>
+            <div class="flyer-strip"></div>
+          </div>
+        </section>
+
+        <section class="section section-purple">
+          <div class="container">
+            <div class="section-header">
+              <div class="section-label"><i data-lucide="compass"></i> Explore</div>
+              <h2 class="section-title">What We Offer</h2>
+            </div>
+            <div class="features-grid">
+              <div class="feature-card" onclick="showPage('sermons')">
+                <div class="feature-icon"><i data-lucide="video"></i></div>
+                <div class="feature-title">Sermons</div>
+                <div class="feature-desc">Watch and listen to inspiring messages</div>
+              </div>
+              <div class="feature-card" onclick="showPage('events')">
+                <div class="feature-icon"><i data-lucide="calendar-days"></i></div>
+                <div class="feature-title">Events</div>
+                <div class="feature-desc">Stay connected with church activities</div>
+              </div>
+              <div class="feature-card" onclick="showPage('prayer')">
+                <div class="feature-icon"><i data-lucide="heart-handshake"></i></div>
+                <div class="feature-title">Prayer</div>
+                <div class="feature-desc">Share your prayer requests</div>
+              </div>
+              <div class="feature-card" onclick="showPage('membership')">
+                <div class="feature-icon"><i data-lucide="users"></i></div>
+                <div class="feature-title">Membership</div>
+                <div class="feature-desc">Become part of our family</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- About Page -->
+      <div class="page" id="page-about">
+        <section class="about-banner">
+          <div class="about-banner-inner">
+            <div class="hero-badge"><i data-lucide="sparkles"></i> Who We Are</div>
+            <h1>Our Story</h1>
+            <p>Word &middot; Worship &middot; Fellowship</p>
+          </div>
+        </section>
+
+        <section class="section about-warm">
+          <div class="container">
+            <div class="about-content">
+              <!-- ============================================================
+                   IMPORTANT: PASTE YOUR ORIGINAL ABOUT-PAGE LOGO HERE.
+                   In your old Index.html, find the line that starts with
+                   <img src="data:image/webp;base64,UklGRu6vAAB...
+                   and copy its  src="data:image/webp;base64,..."  value into the
+                   <img> tag below (add it as  src="..." right after <img).
+                   Until you do, the small logo is shown here instead so nothing breaks.
+                   ============================================================ -->
+              <div class="about-image about-logo"><img id="aboutLogoImg" alt="The Christian Sanctuary - Word, Worship, Fellowship"></div>
+              <div class="about-text">
+                <h3>Our Story</h3>
+                <div id="aboutStory"></div>
+                <div class="about-values">
+                  <div class="value-item">
+                    <div class="value-icon"><i data-lucide="book-open"></i></div>
+                    <span class="value-text">Biblical Teaching</span>
+                  </div>
+                  <div class="value-item">
+                    <div class="value-icon"><i data-lucide="heart"></i></div>
+                    <span class="value-text">Loving Community</span>
+                  </div>
+                  <div class="value-item">
+                    <div class="value-icon"><i data-lucide="music"></i></div>
+                    <span class="value-text">Spirit-Led Worship</span>
+                  </div>
+                  <div class="value-item">
+                    <div class="value-icon"><i data-lucide="hand-helping"></i></div>
+                    <span class="value-text">Faithful Service</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        <section class="section about-pillars">
+          <div class="container">
+            <div class="section-header">
+              <div class="section-label"><i data-lucide="heart"></i> What We Stand For</div>
+              <h2 class="section-title">Word &middot; Worship &middot; Fellowship</h2>
+            </div>
+            <div class="pillar-grid">
+              <div class="pillar"><div class="pillar-icon"><i data-lucide="book-open"></i></div><h3>Word</h3><p>We teach and live by the Bible, growing in understanding and putting it into practice every day.</p></div>
+              <div class="pillar"><div class="pillar-icon"><i data-lucide="music"></i></div><h3>Worship</h3><p>We gather to honour God in spirit and truth, through song, prayer and thanksgiving.</p></div>
+              <div class="pillar"><div class="pillar-icon"><i data-lucide="users"></i></div><h3>Fellowship</h3><p>We walk together as one family, caring for one another and serving our community.</p></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section about-leaders">
+          <div class="container">
+            <div class="section-header">
+              <div class="section-label"><i data-lucide="users"></i> Our Team</div>
+              <h2 class="section-title">Church Leadership</h2>
+            </div>
+            <div class="leadership-grid" id="leaderGrid"></div>
+          </div>
+        </section>
+      <section class="about-cta">
+          <h2>Come and Worship With Us</h2>
+          <p>Whether you are new to faith or have been walking with God for years, there is a place for you here.</p>
+          <div class="cta-actions">
+            <button class="btn btn-gold" onclick="showPage('membership')"><i data-lucide="user-plus"></i> Join Us</button>
+            <button class="btn btn-outline" onclick="showPage('contact')"><i data-lucide="mail"></i> Contact Us</button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Events Page -->
+      <div class="page" id="page-events">
+        <section class="section" style="padding-top: 120px;">
+          <div class="container">
+            <div class="section-header">
+              <div class="section-label"><i data-lucide="calendar"></i> Stay Connected</div>
+              <h2 class="section-title">Upcoming Events</h2>
+            </div>
+            
+            <div data-flyers style="display:none; margin-bottom: 40px;">
+              <h3 style="font-family: var(--font-display); font-size: 26px; color: var(--purple-deep); margin-bottom: 16px;">Featured Flyers</h3>
+              <div class="flyer-strip"></div>
+            </div>
+
+            <div class="calendar-container">
+              <div class="calendar-header">
+                <h3 class="calendar-title" id="calendarTitle">January 2026</h3>
+                <div class="calendar-nav">
+                  <button class="calendar-nav-btn" onclick="changeMonth(-1)"><i data-lucide="chevron-left"></i></button>
+                  <button class="calendar-nav-btn" onclick="changeMonth(1)"><i data-lucide="chevron-right"></i></button>
+                </div>
+              </div>
+              <div class="calendar-grid" id="calendarGrid"></div>
+              <div class="calendar-legend">
+                <span><i class="legend-swatch" style="background: linear-gradient(135deg, var(--gold-main), var(--gold-deep));"></i> Day with an event</span>
+                <span><i class="legend-swatch" style="background: linear-gradient(135deg, var(--purple-main), var(--purple-deep));"></i> Today</span>
+                <span style="margin-left: auto;">Tap a day to see its events</span>
+              </div>
+            </div>
+            
+            <div class="event-list" id="eventList"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Sermons Page -->
+      <div class="page" id="page-sermons">
+        <section class="section" style="padding-top: 120px;">
+          <div class="container">
+            <div class="section-header">
+              <div class="section-label"><i data-lucide="video"></i> Watch & Listen</div>
+              <h2 class="section-title">Sermons</h2>
+            </div>
+            
+            <div class="search-bar">
+              <i data-lucide="search" class="search-bar-icon"></i>
+              <input type="text" placeholder="Search sermons..." id="sermonSearch" oninput="filterSermons()">
+            </div>
+            
+            <div class="tabs" id="sermonTabs">
+              <button class="tab-btn active" onclick="filterSermonCategory('all')">All</button>
+              <button class="tab-btn" onclick="filterSermonCategory('Sunday Service')">Sunday</button>
+              <button class="tab-btn" onclick="filterSermonCategory('Bible Study')">Bible Study</button>
+              <button class="tab-btn" onclick="filterSermonCategory('Special')">Special</button>
+            </div>
+            
+            <div class="sermon-grid" id="sermonGrid"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Notices Page -->
+      <div class="page" id="page-notices">
+        <section class="section" style="padding-top: 120px;">
+          <div class="container">
+            <div class="section-header">
+              <div class="section-label"><i data-lucide="megaphone"></i> Stay Informed</div>
+              <h2 class="section-title">Church Notices</h2>
+            </div>
+            <div class="notice-list" id="noticeList"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Prayer Page -->
+      <div class="page" id="page-prayer">
+        <section class="section" style="padding-top: 120px;">
+          <div class="container">
+            <div class="grid-2">
+              <div>
+                <div class="section-label" style="margin-bottom: 16px;"><i data-lucide="heart"></i> We're Here For You</div>
+                <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">Submit a Prayer Request</h2>
+                <p style="color: var(--gray-600); margin-bottom: 32px;">Share your prayer needs with our church family. We believe in the power of prayer and would be honored to lift you up before the Lord.</p>
+                
+                <form id="prayerForm" onsubmit="submitPrayerRequest(event)">
+                  <div class="form-group">
+                    <label class="form-label">Your Name</label>
+                    <input type="text" class="form-input" id="prayerName" placeholder="Enter your name">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email (Optional)</label>
+                    <input type="email" class="form-input" id="prayerEmail" placeholder="Enter your email">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Prayer Request *</label>
+                    <textarea class="form-input" id="prayerRequest" placeholder="Share your prayer request..." required></textarea>
+                  </div>
+                  <label class="form-checkbox">
+                    <input type="checkbox" id="prayerAnonymous">
+                    <span>Submit anonymously</span>
+                  </label>
+                  <button type="submit" class="form-submit" style="margin-top: 24px;">
+                    <i data-lucide="send"></i> Submit Prayer Request
+                  </button>
+                </form>
+              </div>
+              
+              <div>
+                <h3 style="font-family: var(--font-display); font-size: 24px; color: var(--purple-deep); margin-bottom: 24px;">Community Prayers</h3>
+                <div class="prayer-list" id="prayerList" style="grid-template-columns: 1fr;"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Contact Page -->
+      <div class="page" id="page-contact">
+        <section class="section" style="padding-top: 120px;">
+          <div class="container">
+            <div class="section-header">
+              <div class="section-label"><i data-lucide="mail"></i> Get In Touch</div>
+              <h2 class="section-title">Contact Us</h2>
+            </div>
+            
+            <div class="contact-grid">
+              <div>
+                <div class="contact-info-card">
+                  <div class="contact-info-icon"><i data-lucide="map-pin"></i></div>
+                  <div>
+                    <div class="contact-info-label">Address</div>
+                    <div class="contact-info-value" id="cAddr">123 Faith Street, City, State 12345</div>
+                  </div>
+                </div>
+                <div class="contact-info-card">
+                  <div class="contact-info-icon"><i data-lucide="phone"></i></div>
+                  <div>
+                    <div class="contact-info-label">Phone</div>
+                    <div class="contact-info-value" id="cPhone">(555) 123-4567</div>
+                  </div>
+                </div>
+                <div class="contact-info-card">
+                  <div class="contact-info-icon"><i data-lucide="mail"></i></div>
+                  <div>
+                    <div class="contact-info-label">Email</div>
+                    <div class="contact-info-value" id="cEmail">info@christiansanctuary.org</div>
+                  </div>
+                </div>
+                <div class="contact-info-card">
+                  <div class="contact-info-icon"><i data-lucide="clock"></i></div>
+                  <div>
+                    <div class="contact-info-label">Office Hours</div>
+                    <div class="contact-info-value" id="cHours">Mon - Fri: 9AM - 5PM</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card">
+                <h3 class="card-title">Send Us a Message</h3>
+                <form id="contactForm" onsubmit="submitContactForm(event)">
+                  <div class="form-row">
+                    <div class="form-group"><label class="form-label">Name *</label><input type="text" class="form-input" id="cfName" required maxlength="100"></div>
+                    <div class="form-group"><label class="form-label">Email *</label><input type="email" class="form-input" id="cfEmail" required></div>
+                  </div>
+                  <div class="form-group"><label class="form-label">Subject</label><input type="text" class="form-input" id="cfSubject" maxlength="150"></div>
+                  <div class="form-group"><label class="form-label">Message *</label><textarea class="form-input" id="cfMessage" rows="4" required maxlength="3000"></textarea></div>
+                  <button type="submit" class="form-submit">Send Message</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Membership Page -->
+      <div class="page" id="page-membership">
+        <section class="section" style="padding-top: 120px;">
+          <div class="container">
+            <div class="section-header">
+              <div class="section-label"><i data-lucide="heart"></i> Join Our Family</div>
+              <h2 class="section-title">Become a Member</h2>
+              <p class="section-subtitle">Take the next step in your faith journey and become part of our church family.</p>
+            </div>
+            
+            <div class="form-container">
+              <div class="card">
+                <form id="membershipForm" onsubmit="submitMembershipForm(event)">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">First Name *</label>
+                      <input type="text" class="form-input" id="memberFirstName" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Last Name *</label>
+                      <input type="text" class="form-input" id="memberLastName" required>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email Address *</label>
+                    <input type="email" class="form-input" id="memberEmail" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Phone Number *</label>
+                    <input type="tel" class="form-input" id="memberPhone" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <input type="text" class="form-input" id="memberAddress">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Occupation</label>
+                    <input type="text" class="form-input" id="memberOccupation" placeholder="e.g. Teacher, Nurse, Student" maxlength="100">
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Date of Birth</label>
+                      <input type="date" class="form-input" id="memberDOB">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Family Group</label>
+                      <select class="form-input" id="memberFamily" onchange="toggleKin()">
+                        <option value="">Select...</option>
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Family">Family with Children</option>
+                        <option value="Senior">Senior</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Are you new to the church?</label>
+                    <select class="form-input" id="memberType" onchange="toggleJoined()">
+                      <option value="new">Yes - I'm new here</option>
+                      <option value="existing">No - I have been a member for a while</option>
+                    </select>
+                  </div>
+                  <div class="form-group" id="joinedGroup" style="display:none">
+                    <label class="form-label">When did you join the church? *</label>
+                    <input type="date" class="form-input" id="memberJoined">
+                    <small style="color: var(--gray-500); font-size: 12px;">An approximate date is fine.</small>
+                  </div>
+                  <div id="kinSection" style="display:none;margin-bottom:24px;padding:20px;background:var(--purple-subtle);border-radius:14px">
+                    <div style="font-weight:600;color:var(--purple-deep);margin-bottom:4px">Your Household</div>
+                    <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px">Register your spouse, children or other family together - they will be linked to you. Their own email and occupation are optional.</p>
+                    <div id="kinRows"></div>
+                    <button type="button" class="btn btn-outline-purple btn-sm" onclick="addKinRow()"><i data-lucide="user-plus"></i> Add family member</button>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Your Calling - where would you love to serve?</label>
+                    <div class="ministry-grid" id="memberMinistry" data-ministry></div>
+                    <small style="color: var(--gray-500); font-size: 12px;">Choose as many as you like.</small>
+                  </div>
+                  <button type="submit" class="form-submit">
+                    <i data-lucide="user-plus"></i> Submit Registration
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="logo-placeholder" role="img" aria-label="The Christian Sanctuary logo"></div>
+          <p>A welcoming community dedicated to worship, fellowship, and service. Join us as we grow together in faith.</p>
+          <div class="footer-social">
+            <div class="social-btn"><i data-lucide="facebook"></i></div>
+            <div class="social-btn"><i data-lucide="instagram"></i></div>
+            <div class="social-btn"><i data-lucide="youtube"></i></div>
+          </div>
+        </div>
+        <div>
+          <h4 class="footer-title">Quick Links</h4>
+          <ul class="footer-links">
+            <li><span onclick="showPage('about')">About Us</span></li>
+            <li><span onclick="showPage('sermons')">Sermons</span></li>
+            <li><span onclick="showPage('events')">Events</span></li>
+            <li><span onclick="showPage('contact')">Contact</span></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-title">Get Involved</h4>
+          <ul class="footer-links">
+            <li><span onclick="showPage('membership')">Membership</span></li>
+            <li><span onclick="showPage('prayer')">Prayer Requests</span></li>
+            <li><span onclick="showPage('events')">Volunteer</span></li>
+            <li><span onclick="showPage('contact')">Ministries</span></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-title">Service Times</h4>
+          <ul class="footer-links">
+            <li id="footerServices" style="line-height:1.9"></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span style="color: var(--gray-500);">© 2026 The Christian Sanctuary. All rights reserved.</span>
+        <span style="color: var(--gray-500);">Made with ♥ for God's Glory</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+  
+  <!-- RSVP Modal -->
+  <div class="modal-overlay" id="rsvpModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">RSVP for Event</h3>
+        <button class="modal-close" onclick="closeModal('rsvpModal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <p id="rsvpEventTitle" style="margin-bottom: 20px; color: var(--gray-600);"></p>
+        <form id="rsvpForm" onsubmit="submitRSVP(event)">
+          <input type="hidden" id="rsvpEventId">
+          <div class="form-group">
+            <label class="form-label">Your Name *</label>
+            <input type="text" class="form-input" id="rsvpName" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input type="email" class="form-input" id="rsvpEmail" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contact Number (optional)</label>
+            <input type="tel" class="form-input" id="rsvpPhone" placeholder="e.g. 868-555-1234" maxlength="25">
+          </div>
+          <button type="submit" class="form-submit">Confirm RSVP</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Member Modal -->
+  <div class="modal-overlay" id="memberModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="memberModalTitle">Add Member</h3>
+        <button class="modal-close" onclick="closeModal('memberModal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="adminMemberForm" onsubmit="saveMember(event)">
+          <input type="hidden" id="editMemberId">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">First Name *</label>
+              <input type="text" class="form-input" id="editMemberFirstName" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last Name *</label>
+              <input type="text" class="form-input" id="editMemberLastName" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input type="email" class="form-input" id="editMemberEmail" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="form-input" id="editMemberPhone">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Address</label>
+            <input type="text" class="form-input" id="editMemberAddress">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Date of Birth</label>
+              <input type="date" class="form-input" id="editMemberDOB">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select class="form-input" id="editMemberStatus">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Family Group</label>
+            <select class="form-input" id="editMemberFamily">
+              <option value="">Select...</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Family">Family</option>
+              <option value="Senior">Senior</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date Joined Church</label>
+            <input type="date" class="form-input" id="editMemberJoined">
+            <small id="editMemberRegistered" style="color: var(--gray-500); font-size: 12px;"></small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Occupation</label>
+            <input type="text" class="form-input" id="editMemberOccupation" maxlength="100">
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Family Role</label><select class="form-input" id="editMemberRelationship"><option value="">-</option><option>Head of household</option><option>Spouse</option><option>Child</option><option>Parent</option><option>Sibling</option><option>Other</option></select></div>
+            <div class="form-group"><label class="form-label">Link to family of</label><select class="form-input" id="editMemberLink"></select></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Your Calling (ministry interests - choose all that apply)</label>
+            <div class="ministry-grid" id="editMemberMinistry" data-ministry></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea class="form-input" id="editMemberNotes" rows="3"></textarea>
+          </div>
+          <button type="submit" class="form-submit">Save Member</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event Modal -->
+  <div class="modal-overlay" id="eventModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="eventModalTitle">Add Event</h3>
+        <button class="modal-close" onclick="closeModal('eventModal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="adminEventForm" onsubmit="saveEvent(event)">
+          <input type="hidden" id="editEventId">
+          <div class="form-group">
+            <label class="form-label">Title *</label>
+            <input type="text" class="form-input" id="editEventTitle" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" id="editEventDesc" rows="3"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Date *</label>
+              <input type="date" class="form-input" id="editEventDate" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-input" id="editEventCategory">
+                <option value="Worship">Worship</option>
+                <option value="Bible Study">Bible Study</option>
+                <option value="Youth">Youth</option>
+                <option value="Fellowship">Fellowship</option>
+                <option value="Outreach">Outreach</option>
+                <option value="Special">Special</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Start Time</label>
+              <input type="time" class="form-input" id="editEventTime">
+            </div>
+            <div class="form-group">
+              <label class="form-label">End Time</label>
+              <input type="time" class="form-input" id="editEventEndTime">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Location</label>
+            <input type="text" class="form-input" id="editEventLocation">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Online Meeting Link (optional)</label>
+            <input type="url" class="form-input" id="editEventLink" placeholder="https://zoom.us/j/... or Google Meet / YouTube link">
+            <small style="color: var(--gray-500); font-size: 12px;">For online events such as Bible study. Visitors will see a "Join Online" button.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">RSVP Coordinator Email (optional)</label>
+            <input type="text" class="form-input" id="editEventCoordinator" placeholder="coordinator@example.com (separate several with commas)">
+            <small style="color: var(--gray-500); font-size: 12px;">This person is emailed each time someone RSVPs, along with the default address in Settings.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Event Flyer (optional)</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button type="button" class="btn btn-purple btn-sm" onclick="openDrivePicker()"><i data-lucide="hard-drive"></i> Choose from Google Drive</button>
+              <button type="button" class="btn btn-outline-purple btn-sm" onclick="document.getElementById('editEventFlyerFile').click()"><i data-lucide="upload"></i> Upload from device</button>
+            </div>
+            <input type="file" id="editEventFlyerFile" accept="image/*" onchange="handleFlyerPick(this)" style="display:none">
+            <div id="flyerPreview"></div>
+            <small style="color: var(--gray-500); font-size: 12px;">JPG or PNG. Portrait flyers look best. Large images are resized automatically.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-input" id="editEventActive">
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+          <button type="submit" class="form-submit">Save Event</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sermon Modal -->
+  <div class="modal-overlay" id="sermonModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="sermonModalTitle">Add Sermon</h3>
+        <button class="modal-close" onclick="closeModal('sermonModal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="adminSermonForm" onsubmit="saveSermon(event)">
+          <input type="hidden" id="editSermonId">
+          <div class="form-group">
+            <label class="form-label">Title *</label>
+            <input type="text" class="form-input" id="editSermonTitle" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Speaker *</label>
+              <input type="text" class="form-input" id="editSermonSpeaker" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date *</label>
+              <input type="date" class="form-input" id="editSermonDate" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Scripture</label>
+              <input type="text" class="form-input" id="editSermonScripture" placeholder="e.g., John 3:16">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-input" id="editSermonCategory">
+                <option value="Sunday Service">Sunday Service</option>
+                <option value="Bible Study">Bible Study</option>
+                <option value="Special">Special</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">YouTube URL</label>
+            <input type="url" class="form-input" id="editSermonVideo" placeholder="https://www.youtube.com/watch?v=...">
+            <small style="color: var(--gray-500); font-size: 12px;">Paste the link from YouTube - the sermon plays right on your site.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea class="form-input" id="editSermonNotes" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-input" id="editSermonActive">
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+          <button type="submit" class="form-submit">Save Sermon</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notice Modal -->
+  <div class="modal-overlay" id="noticeModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="noticeModalTitle">Add Notice</h3>
+        <button class="modal-close" onclick="closeModal('noticeModal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="adminNoticeForm" onsubmit="saveNotice(event)">
+          <input type="hidden" id="editNoticeId">
+          <div class="form-group">
+            <label class="form-label">Title *</label>
+            <input type="text" class="form-input" id="editNoticeTitle" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Content *</label>
+            <textarea class="form-input" id="editNoticeContent" rows="4" required></textarea>
+          </div>
+          <div class="form-group"><label class="form-label">Who can read it</label><select class="form-input" id="editNoticeAudience"><option value="Public">Everyone (public)</option><option value="Members">Members only</option></select></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Priority</label>
+              <select class="form-input" id="editNoticePriority">
+                <option value="Low">Low</option>
+                <option value="Normal" selected>Normal</option>
+                <option value="High">High</option>
+                <option value="Urgent">Urgent</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-input" id="editNoticeCategory">
+                <option value="General">General</option>
+                <option value="Event">Event</option>
+                <option value="Ministry">Ministry</option>
+                <option value="Announcement">Announcement</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Start Date</label>
+              <input type="date" class="form-input" id="editNoticeStartDate">
+            </div>
+            <div class="form-group">
+              <label class="form-label">End Date</label>
+              <input type="date" class="form-input" id="editNoticeEndDate">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-input" id="editNoticeActive">
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
+          <button type="submit" class="form-submit">Save Notice</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Modal -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="userModalTitle">Add Admin User</h3>
+        <button class="modal-close" onclick="closeModal('userModal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="adminUserForm" onsubmit="saveUser(event)">
+          <input type="hidden" id="editUserId">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" class="form-input" id="editUserName" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Username *</label>
+              <input type="text" class="form-input" id="editUserUsername" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email *</label>
+              <input type="email" class="form-input" id="editUserEmail" required>
+            </div>
+          </div>
+          <div class="form-group" id="passwordGroup">
+            <label class="form-label">Password *</label>
+            <input type="password" class="form-input" id="editUserPassword">
+            <small style="color: var(--gray-500); font-size: 12px;">At least 10 characters with a letter and a number. When editing, leave blank to keep the current password. A new or reset password is temporary: the person must change it at their next sign in.</small>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Role</label>
+              <select class="form-input" id="editUserRole">
+                <option value="admin">Administrator</option>
+                <option value="super" id="roleSuperOpt">Super Administrator</option>
+                <option value="coordinator">Event Coordinator</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select class="form-input" id="editUserActive">
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="form-submit">Save User</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Delete Modal -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Delete</h3>
+        <button class="modal-close" onclick="closeModal('confirmModal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        <div style="width: 64px; height: 64px; background: var(--error-pale); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+          <i data-lucide="alert-triangle" style="color: var(--error); width: 32px; height: 32px;"></i>
+        </div>
+        <p id="confirmMessage" style="color: var(--gray-600); margin-bottom: 24px;">Are you sure you want to delete this item?</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+          <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Drive Flyer Picker -->
+  <div class="modal-overlay" id="driveModal"><div class="modal" style="max-width: 760px;">
+    <div class="modal-header"><h3 class="modal-title">Choose an image from Google Drive</h3><button class="modal-close" onclick="closeModal('driveModal')"><i data-lucide="x"></i></button></div>
+    <div class="modal-body">
+      <p style="color: var(--gray-500); font-size: 14px; margin-bottom: 14px;">These are the images in your <strong>Church App Flyers</strong> folder. <a id="driveFolderLink" href="#" target="_blank" rel="noopener" style="color: var(--purple-main);">Open the folder</a> to add more, then tap Refresh.</p>
+      <div id="driveGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px;"></div>
+      <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 10px;" onclick="loadDriveFiles()"><i data-lucide="refresh-cw"></i> Refresh</button>
+      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--gray-200);">
+        <label class="form-label">Or paste a Google Drive link to any image in your Drive</label>
+        <div style="display: flex; gap: 8px;"><input class="form-input" id="driveLink" placeholder="https://drive.google.com/file/d/..."><button type="button" class="btn btn-purple btn-sm" onclick="useDriveLink()">Use</button></div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- Change Password Modal -->
+  <div class="modal-overlay" id="passwordModal"><div class="modal" style="max-width: 440px;">
+    <div class="modal-header"><h3 class="modal-title">Change Password</h3><button class="modal-close" onclick="closeModal('passwordModal')"><i data-lucide="x"></i></button></div>
+    <div class="modal-body"><form id="passwordForm" onsubmit="changeAdminPassword(event)">
+      <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-input" id="currentPassword" required autocomplete="current-password"></div>
+      <div class="form-group"><label class="form-label">New Password (8+ characters)</label><input type="password" class="form-input" id="newPassword" required minlength="8" autocomplete="new-password"></div>
+      <div class="form-group"><label class="form-label">Confirm New Password</label><input type="password" class="form-input" id="confirmPassword" required autocomplete="new-password"></div>
+      <button type="submit" class="form-submit">Update Password</button>
+    </form></div>
+  </div></div>
+
+  <!-- Join / Member sign-in -->
+  <div class="modal-overlay" id="joinPromptModal"><div class="modal" style="max-width:480px">
+    <div class="modal-header"><h3 class="modal-title" id="jpTitle"></h3><button class="modal-close" aria-label="Close" onclick="closeJoinPrompt(true)"><i data-lucide="x"></i></button></div>
+    <div class="modal-body" style="text-align:center">
+      <p id="jpText" style="color:var(--gray-600);margin-bottom:22px"></p>
+      <div id="jpMain" style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-purple" style="justify-content:center" onclick="registerFromPrompt()"><i data-lucide="user-plus"></i> Register Now</button>
+        <button class="btn btn-outline-purple" style="justify-content:center" onclick="showJpVerify()">I'm already a member - sign in</button>
+        <button class="btn btn-ghost" style="justify-content:center" id="jpLater" onclick="closeJoinPrompt(true)">Remind me later</button>
+      </div>
+      <form id="jpVerify" style="display:none;text-align:left" onsubmit="verifyMemberUI(event)">
+        <div id="jpStep1">
+          <label class="form-label" for="jpEmail">Email you registered with</label>
+          <input type="email" class="form-input" id="jpEmail" autocomplete="email" required>
+          <button type="submit" class="form-submit" id="jpBtn" style="margin-top:14px">Email me a code</button>
+        </div>
+        <div id="jpStep2" style="display:none">
+          <p style="color:var(--gray-600);margin-bottom:12px" id="jpSent"></p>
+          <label class="form-label" for="jpCode">6-digit code</label>
+          <input type="text" class="form-input" id="jpCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="font-size:24px;letter-spacing:6px;text-align:center">
+          <button type="submit" class="form-submit" id="jpBtn2" style="margin-top:14px">Sign in</button>
+          <p style="text-align:center;margin-top:12px;font-size:14px"><span id="jpResend" style="color:var(--purple-main);cursor:pointer" onclick="jpBack()">Use a different email or get a new code</span></p>
+        </div>
+        <p style="text-align:center;margin-top:14px;font-size:14px;color:var(--gray-500)">Not registered yet? <span onclick="registerFromPrompt()" style="color:var(--purple-main);cursor:pointer">Register now</span></p>
+      </form>
+    </div>
+  </div></div>
+
+
+  <!-- Alerts (bell) -->
+  <div class="modal-overlay" id="bellModal"><div class="modal" style="max-width:520px">
+    <div class="modal-header"><h3 class="modal-title">Alerts</h3><button class="modal-close" aria-label="Close" onclick="closeModal('bellModal')"><i data-lucide="x"></i></button></div>
+    <div class="modal-body">
+      <div id="pushBox" class="push-box"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px"><strong>Recent</strong><button class="btn btn-ghost btn-sm" onclick="ChurchUI.markAllRead()">Mark all as read</button></div>
+      <div id="bellList"></div>
+    </div>
+  </div></div>
+
+  <!-- View Modal -->
+  <div class="modal-overlay" id="viewModal"><div class="modal"><div class="modal-header"><h3 class="modal-title" id="viewTitle"></h3><button class="modal-close" onclick="closeModal('viewModal')"><i data-lucide="x"></i></button></div><div class="modal-body" id="viewBody"></div></div></div>
+
+  <!-- Video Player Modal -->
+  <div class="modal-overlay" id="videoModal">
+    <div class="modal" style="max-width: 900px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="videoModalTitle">Watch Sermon</h3>
+        <button class="modal-close" onclick="closeVideoModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" style="padding: 0;">
+        <div id="videoContainer" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; background: #000;">
+          <!-- Video iframe will be inserted here -->
+        </div>
+        <div style="padding: 24px;">
+          <h4 id="videoSermonTitle" style="font-family: var(--font-display); font-size: 20px; color: var(--gray-800); margin-bottom: 8px;"></h4>
+          <div style="display: flex; gap: 20px; color: var(--gray-500); font-size: 14px; margin-bottom: 12px;">
+            <span id="videoSermonSpeaker"><i data-lucide="user" style="width: 16px; height: 16px;"></i> </span>
+            <span id="videoSermonDate"><i data-lucide="calendar" style="width: 16px; height: 16px;"></i> </span>
+            <span id="videoSermonScripture"><i data-lucide="book-open" style="width: 16px; height: 16px;"></i> </span>
+          </div>
+          <p id="videoSermonNotes" style="color: var(--gray-600); font-size: 15px;"></p>
+          <div id="videoExternalLink" style="margin-top: 16px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/splash.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/notify.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>

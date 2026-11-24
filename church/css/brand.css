@@ -1,0 +1,80 @@
+/* brand.css - loaded LAST. App-only additions: install, offline, bell, splash, large touch targets. */
+:root { --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); }
+body { padding-bottom: var(--safe-bottom); -webkit-tap-highlight-color: transparent; }
+.navbar { padding-top: var(--safe-top); }
+button, .btn, .nav-link, .sidebar-link { touch-action: manipulation; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--purple-light); outline-offset: 2px; }
+
+/* offline + update bars */
+.offline-bar, .update-bar { position: fixed; left: 0; right: 0; z-index: 3000; padding: 10px 16px; text-align: center; font-size: 15px; font-weight: 500; }
+.offline-bar { top: 0; padding-top: calc(10px + var(--safe-top)); background: #5b4a00; color: #fff3c4; }
+.offline-bar[hidden], .update-bar[hidden] { display: none; }
+.update-bar { bottom: 0; padding-bottom: calc(10px + var(--safe-bottom)); background: var(--purple-deep); color: #fff; }
+.update-bar button { margin-left: 10px; padding: 8px 16px; border: 0; border-radius: 999px; background: #fff; color: var(--purple-deep); font-weight: 600; cursor: pointer; }
+
+/* member nav + bell */
+.member-nav { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.member-nav button { font-family: inherit; cursor: pointer; border-radius: 999px; border: 1.5px solid var(--purple-main); background: transparent; color: var(--purple-main); padding: 9px 16px; font-size: 14px; font-weight: 500; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+.member-nav button:hover { background: var(--purple-subtle); }
+.member-nav .nav-user { background: var(--purple-subtle); }
+.bell-btn { position: relative; padding: 9px 12px !important; }
+.bell-count { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #c0392b; color: #fff; font-size: 12px; font-weight: 700; line-height: 20px; text-align: center; }
+.bell-count[hidden] { display: none; }
+#adminBell .bell-btn { margin-right: 8px; border: 1.5px solid var(--purple-main); background: #fff; border-radius: 999px; cursor: pointer; min-height: 40px; color: var(--purple-main); }
+.bell-item { display: block; width: 100%; text-align: left; padding: 12px 14px; margin-bottom: 8px; border-radius: 12px; background: var(--purple-subtle); border: 1px solid transparent; font-family: inherit; cursor: pointer; }
+.bell-item.unread { border-color: var(--purple-light); background: #fff; box-shadow: 0 1px 6px rgba(74, 29, 110, .12); }
+.bell-item.urgent { border-color: #c0392b; }
+.bell-item strong { display: block; color: var(--gray-800); font-size: 15px; }
+.bell-item span { display: block; color: var(--gray-600); font-size: 14px; margin-top: 2px; white-space: pre-line; }
+.bell-item time { display: block; color: var(--gray-400); font-size: 12px; margin-top: 4px; }
+.push-box { padding: 14px; border-radius: 14px; background: var(--purple-subtle); font-size: 15px; color: var(--gray-700); }
+.push-box .btn { width: 100%; justify-content: center; margin-top: 10px; min-height: 48px; font-size: 16px; }
+.push-box label { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 15px; }
+.push-box input[type=checkbox] { width: 22px; height: 22px; }
+.alerts-banner { position: fixed; left: 12px; right: 12px; bottom: calc(12px + var(--safe-bottom)); z-index: 2500; background: #fff; border: 1.5px solid var(--purple-light); border-radius: 16px; padding: 14px 16px; box-shadow: 0 8px 30px rgba(0, 0, 0, .2); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; max-width: 560px; margin: 0 auto; }
+.alerts-banner span { flex: 1 1 200px; font-size: 15px; }
+.alerts-banner button { min-height: 44px; border-radius: 999px; padding: 0 16px; border: 0; cursor: pointer; font-weight: 600; font-family: inherit; }
+.alerts-banner .go { background: var(--purple-main); color: #fff; }
+.alerts-banner .no { background: transparent; color: var(--gray-600); }
+
+/* share + members-only */
+.share-link { border: 0; background: transparent; color: #1c7c3b; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 8px 4px; display: inline-flex; align-items: center; gap: 4px; min-height: 40px; }
+.share-link svg { width: 16px; height: 16px; }
+.event-actions { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+.members-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--purple-main); background: var(--purple-pale); padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+.members-tag svg { width: 12px; height: 12px; }
+
+/* approvals */
+.approval-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+.approval-card h4 { margin: 0 0 4px; color: var(--gray-800); }
+.approval-card .meta { color: var(--gray-500); font-size: 14px; }
+.approval-card .acts { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.approval-card .kin { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--gray-200); font-size: 14px; color: var(--gray-600); }
+.nav-badge { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 6px; border-radius: 10px; background: #c0392b; color: #fff; font-size: 12px; font-weight: 700; text-align: center; }
+.nav-badge[hidden] { display: none; }
+.radio-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.radio-row label { display: flex; align-items: center; gap: 8px; font-size: 15px; padding: 10px 14px; border: 1.5px solid var(--gray-200); border-radius: 12px; cursor: pointer; }
+
+/* splash */
+#churchSplash { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #fff; transition: opacity .35s; cursor: pointer; }
+#churchSplash img { border-radius: 24px; animation: spPop .7s ease-out both; }
+#churchSplash .sp-name { font-family: var(--font-display, serif); font-size: 26px; color: var(--purple-deep); }
+#churchSplash .sp-tap { position: absolute; bottom: calc(28px + var(--safe-bottom)); font-size: 13px; color: var(--gray-400); }
+#churchSplash.out { opacity: 0; pointer-events: none; }
+#churchSplash.still img { animation: none; }
+@keyframes spPop { from { transform: scale(.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #churchSplash, #churchSplash img { animation: none !important; transition: none !important; } html { scroll-behavior: auto !important; } }
+
+@media (max-width: 768px) {
+  .member-nav { width: 100%; justify-content: flex-start; padding: 8px 0; }
+  .modal { max-height: 92vh; }
+  .form-input, .form-submit, .btn { min-height: 48px; }
+}
+
+@media (min-width: 769px) {
+  .member-nav { flex-wrap: nowrap; gap: 6px; margin-right: 4px; }
+  .member-nav button { padding: 8px 12px; min-height: 40px; }
+  .member-nav .lbl { display: none; }
+  .nav-menu { gap: 2px; }
+}
+@media (min-width: 769px) and (max-width: 1180px) { .member-nav .lbl-sm { display: none; } }
