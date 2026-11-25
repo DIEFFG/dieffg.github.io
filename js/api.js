@@ -4,6 +4,7 @@
   var CFG = window.RECON_CONFIG, SKEY = 'reconSession';
   var NEVER_QUEUE = /^(login|register|guest|changePassword|resetUserPassword|notif)/;
   var MUTATION = /^(add|update|delete|approve|deny|import|register|process|sync|cleanup|standardize|normalize|set|reset|send)/;
+  var ONLINE_ONLY = /^(shield(Import|Sources|PointsTable|Platoons)|roll)/;   // Shield import tools: never cached, never queued offline
   var ALIAS = { authenticateUser: 'login', registerUser: 'register', loginAsGuest: 'guest', changeUserPassword: 'changePassword' };
 
   // ---------- session ----------
@@ -42,10 +43,11 @@
 
   function call(action, args) {
     args = args || [];
-    var mut = MUTATION.test(action) && !NEVER_QUEUE.test(action), cid = mut ? uuid() : '';
+    var online = ONLINE_ONLY.test(action);
+    var mut = !online && MUTATION.test(action) && !NEVER_QUEUE.test(action), cid = (mut || (online && /(Preview|Confirm|Discard|Set|Check|Submit|Decide|Add)$/.test(action))) ? uuid() : '';
     return post(action, args, cid).then(function (j) {
       if (j.ok) {
-        if (!mut && !/^(login|guest|me|notif|getUser)/.test(action)) cacheSet(action, args, j.data);
+        if (!mut && !online && !/^(login|guest|me|notif|getUser)/.test(action)) cacheSet(action, args, j.data);
         return j.data;
       }
       if (j.code === 'AUTH') {
@@ -63,6 +65,7 @@
         return idb('queue', 'readwrite', function (st) { return st.put({ clientId: cid, action: action, args: args, ts: Date.now() }); })
           .then(function () { updateQueueBadge(); return { success: true, queued: true, message: 'You are offline. Saved on this device and will sync automatically.' }; });
       }
+      if (online) throw new Error('You need to be online to use Import results.');
       return cacheGet(action, args).then(function (hit) { if (hit !== undefined) { window.__recon_stale = true; return hit; } throw new Error('You appear to be offline.'); });
     });
   }

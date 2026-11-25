@@ -255,6 +255,14 @@ function initializeApp() {
 
   function navigateTo(page) {
     // Check permission for cadets page - only admins and instructors
+    if (page === 'shield-import' && !isAdmin()) {
+      showToast('Access denied. Only Admins can import results.', 'error');
+      return;
+    }
+    if (page === 'roll' && !(window.reconRollAllowed && window.reconRollAllowed())) {
+      showToast('Access denied. Registration is for Unit Officers, Battalion Commanders and Admins.', 'error');
+      return;
+    }
     if ((page === 'cadets' || page === 'reports') && !isStaff()) {
       showToast('Access denied. Your role cannot open this page.', 'error');
       return;
@@ -284,7 +292,9 @@ function initializeApp() {
       'reviews': 'Views & Reviews',
       'calendar': 'Calendar', 
       'users': 'User Management',
-      'reports': 'Reports'
+      'reports': 'Reports',
+      'shield-import': 'Import Shield results',
+      'roll': 'Platoon registration'
     };
     var titleEl = document.getElementById('pageTitle');
     if (titleEl) titleEl.textContent = titles[page] || page;
@@ -328,6 +338,8 @@ function initializeApp() {
       case 'reviews': loadReviews(); break;
       case 'calendar': loadCalendar(); break;
       case 'reports': if (window.loadReports) window.loadReports(); break;
+      case 'shield-import': if (window.loadShieldImport) window.loadShieldImport(); break;
+      case 'roll': if (window.loadRoll) window.loadRoll(); break;
       case 'users': 
         if (isAdmin()) { loadUsers(); } else { hideLoading(); }
         break;
