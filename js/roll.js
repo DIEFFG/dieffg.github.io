@@ -221,11 +221,17 @@
         d.rows.map(function (x) { return '<tr><th>' + x.n + '</th>' + COLS.map(function (k) { return '<td>' + esc(x[k[0]]) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
       else h += '<p class="muted">The cadet details are removed once a roll is replaced or returned.</p>';
       var f = '<button class="btn btn-outline" id="rlCancel">Close</button>';
+      var canDl = d.canDownload && d.rows.length; d.competitionsText = compList(r.competitions);
+      if (canDl) f += '<button class="btn btn-outline" id="rlDlX"><i class="fas fa-file-excel"></i> Download Excel</button><button class="btn btn-outline" id="rlDlP"><i class="fas fa-file-pdf"></i> Download PDF</button>';
       var canEdit = isAdmin() && (r.status === 'APPROVED' || r.status === 'SUBMITTED') && d.rows.length;
       if (canEdit) f += '<button class="btn btn-secondary" id="rlEdit"><i class="fas fa-edit"></i> Edit roll</button>';
       if (d.canDecide) f += '<button class="btn btn-outline rl-ret" id="rlRet"><i class="fas fa-undo"></i> Return for fixes</button><button class="btn btn-primary" id="rlApp"><i class="fas fa-check"></i> Approve</button>';
       modal('Nominal roll', h, f); $('rlCancel').onclick = closeModal;
       if (canEdit) $('rlEdit').onclick = function () { startEdit(d); };
+      if (canDl) {
+        $('rlDlX').onclick = function () { var b = this; b.disabled = true; window.ReconRollExport.xlsx(d).then(function (n) { toast('Downloaded ' + n, 'success'); }).catch(err).then(function () { b.disabled = false; }); };
+        $('rlDlP').onclick = function () { window.ReconRollExport.pdf(d).then(function () { toast('In the print window, choose Save as PDF.', 'info'); }).catch(err); };
+      }
       if (d.canDecide) {
         $('rlApp').onclick = function () {
           if (!window.confirm('Approve this roll? ' + (m ? m.added + ' new cadet(s) will be added and ' + m.updated + ' updated. ' : '') + 'The platoon becomes registered.')) return;
