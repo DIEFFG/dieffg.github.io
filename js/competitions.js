@@ -108,7 +108,8 @@
   }
   function drawForm(pid) {
     var p = rec.platoons.filter(function (x) { return x.id === pid; })[0], cur = rec.mine[pid] || {};
-    var h = '<p class="muted">Enter each mark from 0 up to the maximum shown. Leave a box empty if not yet marked. Maximum ' + rec.max + ' in total.</p>';
+    var stamps = rec.records.map(function (r) { return (cur[r.code] || {}).updated || ''; }).filter(Boolean).sort(function (x, y) { return new Date(y) - new Date(x); });
+    var h = (stamps.length ? '<p class="muted"><i class="fas fa-clock"></i> Last saved ' + esc(stamps[0]) + '</p>' : '') + '<p class="muted">Enter each mark from 0 up to the maximum shown. Leave a box empty if not yet marked. Maximum ' + rec.max + ' in total.</p>';
     rec.records.forEach(function (r) {
       var s = cur[r.code] || {};
       h += '<div class="cp-rec"><h4>' + esc(r.ser) + '. ' + esc(r.name) + ' <span class="cp-sub" id="cpT-' + r.code + '"></span></h4><div class="cp-grid">' +
@@ -144,8 +145,10 @@
         return '<tr><td><b>' + esc(r.name) + '</b></td><td>' + r.judgesDone + ' of ' + r.judgesStarted + (r.ready ? '' : ' <span class="rl-badge rl-warn">needs ' + Math.max(1, d.min) + '</span>') + '</td>' + codes.map(function (c) { return '<td>' + (r.recs[c] === null ? '-' : esc(r.recs[c])) + '</td>'; }).join('') + '<td><b>' + (r.total === null ? '-' : esc(r.total)) + '</b></td><td>' + (r.rank || '-') + '</td></tr>'; }).join('');
       var body = '<p class="muted">Each platoon\'s score is the average of its judges\' totals (a judge counts when all four records are fully marked). Maximum ' + d.max + '. Finalising locks scoring; then open <b>Import results</b> to preview and confirm it into the Shield.</p>' +
         '<div class="rl-scroll"><table class="data-table"><thead><tr><th>Platoon</th><th>Judges done</th><th>Roll book</th><th>Training Prog.</th><th>C15</th><th>C19</th><th>Total /' + d.max + '</th><th>Rank</th></tr></thead><tbody>' + (rows || '<tr><td colspan="8">No platoons open for scoring.</td></tr>') + '</tbody></table></div>';
-      modal('Records Review standings ' + badge(d.status).replace(/<[^>]+>/g, ' '), body, '<button class="btn btn-outline" id="cpClose">Close</button>' + (final ? '<button class="btn btn-outline" id="cpRe"><i class="fas fa-unlock"></i> Reopen scoring</button>' : '<button class="btn btn-primary" id="cpFin"><i class="fas fa-lock"></i> Finalise</button>'));
+      modal('Records Review standings ' + badge(d.status).replace(/<[^>]+>/g, ' '), body, '<button class="btn btn-outline" id="cpClose">Close</button><button class="btn btn-outline" id="cpPdfS"><i class="fas fa-file-pdf"></i> Standings PDF</button><button class="btn btn-outline" id="cpPdfD"><i class="fas fa-file-pdf"></i> Score sheets PDF</button>' + (final ? '<button class="btn btn-outline" id="cpRe"><i class="fas fa-unlock"></i> Reopen scoring</button>' : '<button class="btn btn-primary" id="cpFin"><i class="fas fa-lock"></i> Finalise</button>'));
       $('cpClose').onclick = function () { closeModal(); load(); };
+      $('cpPdfS').onclick = function () { printDoc(standingsHtml(d)); };
+      $('cpPdfD').onclick = function () { api('compRecordsDetail').then(function (x) { if (!x.success) { toast(x.error, 'error'); return; } printDoc(sheetsHtml(x, d)); }).catch(err); };
       if (final) $('cpRe').onclick = function () { if (!window.confirm('Reopen scoring? Judges can change scores until you finalise again.')) return; api('compReopen', [{ competition: 'RECORDS' }]).then(function (r) { if (!r.success) { toast(r.error, 'error'); return; } toast('Reopened', 'success'); closeModal(); load(); }).catch(err); };
       else $('cpFin').onclick = function () {
         if (!window.confirm('Finalise Records Review? Scoring will be locked.')) return;
@@ -156,4 +159,52 @@
       };
     }).catch(err);
   }
+  // ---------- printable PDFs (browser print window: choose "Save as PDF") ----------
+  function css() {
+    return '@page{size:A4 portrait;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#17231c;font-size:10px;margin:0}' +
+      '.top{display:flex;align-items:center;gap:12px;border-bottom:3px solid #c9a227;padding-bottom:6px;margin-bottom:8px}.top img{height:56px}.top h1{margin:0;font-size:16px;color:#154b12}.top h2{margin:2px 0 0;font-size:12px}' +
+      'p.meta{color:#555;margin:2px 0 8px}table{width:100%;border-collapse:collapse;margin-bottom:10px}th{background:#154b12;color:#fff;padding:5px 4px;font-size:9px}td{padding:4px;border:1px solid #bbb}' +
+      '.l{text-align:left}.n{text-align:right}h3{color:#154b12;margin:10px 0 2px;font-size:12px}.pg+.pg{page-break-before:always}tr{page-break-inside:avoid}' +
+      '.sig{display:flex;justify-content:space-between;margin-top:26px;font-size:10px}.note{margin-top:12px;font-size:8px;color:#666;font-style:italic}';
+  }
+  function docHtml(title, meta, body) {
+    var logo = new URL('img/ttcf-logo.png', document.baseURI).href;
+    return '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + css() + '</style></head><body>' +
+      '<div class="top"><img src="' + esc(logo) + '" alt="TTCF"><div><h1>TRINIDAD AND TOBAGO CADET FORCE</h1><h2>' + esc(title) + '</h2></div></div><p class="meta">' + meta + '</p>' + body +
+      '<script>window.onload=function(){setTimeout(function(){window.print();},400)}<\/script></body></html>';
+  }
+  function metaLine(d) { return 'School year ' + d.year + '-' + (d.year + 1) + ' &middot; ' + (d.status === 'FINAL' ? 'Finalised' + (d.finalizedAt ? ' ' + esc(d.finalizedAt) : '') + (d.finalizedBy ? ' by ' + esc(d.finalizedBy) : '') : 'Scoring still open (provisional)') + ' &middot; Generated ' + esc(d.generated); }
+  function standingsHtml(d) {
+    var codes = ['RB', 'TP', 'C15', 'C19'];
+    var rows = d.rows.slice().sort(function (a, b) { return (a.rank || 999) - (b.rank || 999); }).map(function (r) {
+      return '<tr><td class="n">' + (r.rank || '-') + '</td><td class="l">' + esc(r.name) + '</td><td class="l">' + esc(r.battalion) + '</td><td class="n">' + r.judgesDone + '</td>' + codes.map(function (c) { return '<td class="n">' + (r.recs[c] === null ? '-' : esc(r.recs[c])) + '</td>'; }).join('') + '<td class="n"><b>' + (r.total === null ? '-' : esc(r.total)) + '</b></td></tr>'; }).join('');
+    return docHtml('Review of Platoon Records: standings', metaLine(d),
+      '<p>Average of the judges\' totals out of ' + d.max + '. RB = Roll book, TP = Training Programme, C15 = Training Report, C19 = Nominal Roll Report.</p>' +
+      '<table><thead><tr><th>#</th><th class="l">Platoon</th><th class="l">Bn</th><th>Judges</th><th>RB</th><th>TP</th><th>C15</th><th>C19</th><th>Total /' + d.max + '</th></tr></thead><tbody>' + (rows || '<tr><td colspan="9">No scores recorded yet.</td></tr>') + '</tbody></table>' +
+      '<div class="sig"><div>Chief Judge: ______________________</div><div>Date: ______________</div></div>');
+  }
+  function sheetsHtml(x, st) {
+    var by = {}; x.rows.forEach(function (r) { (by[r.platoonId] = by[r.platoonId] || { name: r.platoonName, bn: r.battalion, judges: {} }); var j = by[r.platoonId].judges; (j[r.judge] = j[r.judge] || {})[r.record] = r; });
+    var avg = {}; st.rows.forEach(function (r) { avg[r.id] = r; });
+    var body = Object.keys(by).sort(function (a, b) { return by[a].name.localeCompare(by[b].name); }).map(function (pid) {
+      var p = by[pid], s = avg[pid] || {};
+      var judges = Object.keys(p.judges).sort().map(function (jn) {
+        var recs = p.judges[jn], tot = 0, last = '';
+        var rows = x.records.map(function (rc) {
+          var r = recs[rc.code]; if (!r) return '<tr><td class="l">' + esc(rc.name) + '</td><td class="n" colspan="5">not marked</td><td></td></tr>';
+          tot += r.total; if (r.updated) last = r.updated;
+          return '<tr><td class="l">' + esc(rc.name) + '</td>' + x.criteria.map(function (c) { return '<td class="n">' + (r[c.key] === '' ? '-' : esc(r[c.key])) + '</td>'; }).join('') + '<td class="n"><b>' + esc(r.total) + '</b></td><td class="l">' + esc(r.comment) + ' <i>' + esc(r.updated) + '</i></td></tr>';
+        }).join('');
+        return '<h3>Judge: ' + esc(jn) + ' &mdash; total ' + tot + ' / ' + x.max + (last ? ' &middot; last saved ' + esc(last) : '') + '</h3><table><thead><tr><th class="l">Record</th>' + x.criteria.map(function (c) { return '<th>' + esc(c.label) + ' /' + c.max + '</th>'; }).join('') + '<th>Total</th><th class="l">Comment and time saved</th></tr></thead><tbody>' + rows + '</tbody></table>';
+      }).join('');
+      return '<div class="pg"><h2 style="color:#154b12;margin:0 0 2px">' + esc(p.name) + '</h2><p class="meta">' + esc(p.bn) + ' &middot; Platoon score (average of complete judges): <b>' + (s.total === null || s.total === undefined ? '-' : esc(s.total)) + ' / ' + x.max + '</b>' + (s.rank ? ' &middot; Rank ' + s.rank : '') + '</p>' + judges + '</div>';
+    }).join('');
+    return docHtml('Review of Platoon Records: score sheets', metaLine(x), body || '<p>No scores recorded yet.</p>');
+  }
+  function printDoc(html) {
+    var w = window.open('', '_blank');
+    if (!w) { toast('Your browser blocked the print window. Allow pop-ups for this site and try again.', 'error'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+  }
+  window.reconCompStandingsHtml = standingsHtml; window.reconCompSheetsHtml = sheetsHtml;
 })();
