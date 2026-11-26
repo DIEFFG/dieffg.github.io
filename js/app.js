@@ -4969,8 +4969,8 @@ function logout() {
       .withSuccessHandler(function(result) {
         hideLoading();
         if (result.success) {
-          showToast('Password reset successful', 'success');
-          alert('New temporary password for ' + userName + ':\n\n' + result.tempPassword + '\n\nShare it securely. The user must choose a new password at next sign-in.');
+          showToast(result.emailed ? 'Password reset and emailed' : 'Password reset (email not sent)', result.emailed ? 'success' : 'warning');
+          alert('New temporary password for ' + userName + ':\n\n' + result.tempPassword + '\n\n' + (result.emailed ? 'It was also emailed to the user. ' : 'The email could not be sent, so share it securely. ') + 'The user must choose a new password at next sign-in.');
         } else {
           showToast(result.message || 'Error', 'error');
         }
