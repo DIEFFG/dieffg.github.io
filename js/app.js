@@ -4712,6 +4712,7 @@ function logout() {
           return 0;
         });
         
+        window._reconUsers = {}; users.forEach(function (x) { window._reconUsers[x.id] = x; });
         var html = '';
         for (var i = 0; i < users.length; i++) {
           var u = users[i];
@@ -4723,6 +4724,7 @@ function logout() {
             actions += '<button class="btn btn-sm btn-success" onclick="approveUser(\'' + u.id + '\')" title="Approve Registration"><i class="fas fa-check"></i> Approve</button> ';
             actions += '<button class="btn btn-sm btn-danger" onclick="denyUser(\'' + u.id + '\')" title="Deny Registration"><i class="fas fa-times"></i> Deny</button> ';
           } else {
+            actions += '<button class="btn btn-sm btn-outline" onclick="editUser(\'' + u.id + '\')" title="Edit user"><i class="fas fa-pen"></i></button> ';
             actions += '<button class="btn btn-sm btn-outline" onclick="editUserRole(\'' + u.id + '\',\'' + escapeHtml(u.role || '') + '\')" title="Change Role"><i class="fas fa-user-cog"></i></button> ';
             if (isAdmin()) { actions += '<button class="btn btn-sm btn-warning" onclick="resetUserPassword(\'' + u.id + '\',\'' + escapeHtml((u.firstName || '') + ' ' + (u.lastName || '')) + '\')" title="Reset Password"><i class="fas fa-key"></i></button> '; }
             actions += '<button class="btn btn-sm btn-danger" onclick="deleteUser(\'' + u.id + '\')" title="Delete User"><i class="fas fa-trash"></i></button>';
@@ -4831,6 +4833,71 @@ function logout() {
       })
       .denyUser(userId);
   }
+
+  // ---- Admin: edit a user's details (all dropdowns where there is a fixed list) ----
+  var BN_OPTIONS = [['1TTCF', 'First Battalion (1TTCF)'], ['2TTCF', 'Second Battalion (2TTCF)'], ['3TTCF', 'Third Battalion (3TTCF)'], ['4TTCF', 'Fourth Battalion (4TTCF)'], ['5TTCF', 'Fifth Battalion (5TTCF)'], ['6TTCF', 'Sixth Battalion (6TTCF)'], ['7TTCF', 'Seventh / Maritime Battalion (7TTCF)'], ['SSB', 'Service Support Battalion (SSB)'], ['FHQ', 'FHQ']];
+  function editUser(userId) {
+    var u = (window._reconUsers || {})[userId]; if (!u) { showToast('Reload the list and try again', 'error'); return; }
+    var sup = isSuperAdmin(), curRole = u.role === 'User' ? 'Cadet' : u.role, curType = curRole === 'Cadet' ? 'Cadet' : (curRole === 'Guest' ? 'Guest' : 'Adult');
+    if (!sup && (curRole === 'Admin' || curRole === 'Super Admin')) { showToast('Only a Super Admin can edit an Admin or Super Admin', 'error'); return; }
+    var BY_TYPE = { Cadet: ['Cadet'], Adult: ['Instructor', 'Unit Officer', 'Battalion Commander', 'Judge'].concat(sup ? ['Admin', 'Super Admin'] : []), Guest: ['Guest'] };
+    var old = document.getElementById('euModal'); if (old) old.remove();
+    var o = document.createElement('div'); o.id = 'euModal'; o.className = 'modal-overlay active';
+    function opts(list, sel) { return list.map(function (x) { var v = x[0], l = x[1]; return '<option value="' + escapeHtml(v) + '"' + (v === sel ? ' selected' : '') + '>' + escapeHtml(l) + '</option>'; }).join(''); }
+    var bnList = BN_OPTIONS.slice(); if (u.battalion && !bnList.some(function (x) { return x[0] === u.battalion; })) bnList.push([u.battalion, u.battalion]);
+    o.innerHTML = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><h3>Edit user</h3><button class="modal-close" id="euX" aria-label="Close">&times;</button></div><div class="modal-body">' +
+      '<div class="form-group"><label>First name</label><input id="euFirst" class="form-control" value="' + escapeHtml(u.firstName || '') + '"></div>' +
+      '<div class="form-group"><label>Last name</label><input id="euLast" class="form-control" value="' + escapeHtml(u.lastName || '') + '"></div>' +
+      '<div class="form-group"><label>Email</label><input id="euEmail" type="email" class="form-control" value="' + escapeHtml(u.email || '') + '"></div>' +
+      '<div class="form-group"><label>Contact number</label><input id="euPhone" class="form-control" value="' + escapeHtml(u.contactNumber || '') + '"></div>' +
+      '<div class="form-group"><label>Regimental number</label><input id="euReg" class="form-control" value="' + escapeHtml(u.regimentalNumber || '') + '"></div>' +
+      '<div class="form-group"><label>Battalion</label><select id="euBn" class="form-control"><option value="">None</option>' + opts(bnList, u.battalion) + '</select></div>' +
+      '<div class="form-group"><label>Unit</label><select id="euUnit" class="form-control"></select></div>' +
+      '<div class="form-group"><label>Account type</label><select id="euType" class="form-control"><option>Adult</option><option>Cadet</option>' + (curType === 'Guest' ? '<option>Guest</option>' : '') + '</select></div>' +
+      '<div class="form-group"><label>Role</label><select id="euRole" class="form-control"></select></div></div>' +
+      '<div class="modal-footer"><button class="btn btn-outline" id="euCancel">Cancel</button><button class="btn btn-primary" id="euSave"><i class="fas fa-save"></i> Save</button></div></div>';
+    document.body.appendChild(o);
+    var typeEl = document.getElementById('euType'), roleEl = document.getElementById('euRole'), bnEl = document.getElementById('euBn'), unitEl = document.getElementById('euUnit');
+    typeEl.value = curType;
+    function fillRoles() {
+      var list = (BY_TYPE[typeEl.value] || []).slice();
+      if (typeEl.value === curType && curRole && list.indexOf(curRole) < 0) list.push(curRole);
+      roleEl.innerHTML = list.map(function (r) { return '<option>' + r + '</option>'; }).join('');
+      roleEl.value = typeEl.value === curType ? curRole : list[0];
+    }
+    typeEl.onchange = fillRoles; fillRoles();
+    var units = [];   // from the Schools Units list; falls back to what the user already has
+    function fillUnits() {
+      var bn = bnEl.value, names = {}, list = [];
+      units.forEach(function (s) { if (!bn || !s.bn || s.bn === bn) names[s.name] = 1; });
+      if (u.unit) names[u.unit] = 1;
+      Object.keys(names).sort().forEach(function (n) { list.push([n, n]); });
+      unitEl.innerHTML = '<option value="">None</option>' + opts(list, u.unit);
+      if (unitEl.dataset.touched) unitEl.value = unitEl.dataset.val || '';
+    }
+    unitEl.onchange = function () { unitEl.dataset.touched = '1'; unitEl.dataset.val = unitEl.value; };
+    bnEl.onchange = fillUnits; fillUnits();
+    google.script.run.withSuccessHandler(function (rows) {
+      (rows || []).forEach(function (s) {
+        var name = s.school_name || s.name || s.school_unit || s.unit_name || s.unit || s.school || ''; if (!name) return;
+        units.push({ name: String(name), bn: s.battalion ? (BN_OPTIONS.filter(function (b) { return b[0] === String(s.battalion).trim() || b[1].indexOf(String(s.battalion).trim()) === 0; })[0] || [String(s.battalion).trim()])[0] : '' });
+      });
+      fillUnits();
+    }).withFailureHandler(function () {}).getAllSchoolsUnits();
+    function close() { o.remove(); }
+    document.getElementById('euX').onclick = close; document.getElementById('euCancel').onclick = close;
+    document.getElementById('euSave').onclick = function () {
+      var btn = this, d = { firstName: document.getElementById('euFirst').value, lastName: document.getElementById('euLast').value, email: document.getElementById('euEmail').value,
+        contactNumber: document.getElementById('euPhone').value, regimentalNumber: document.getElementById('euReg').value, battalion: bnEl.value, unit: unitEl.value, role: roleEl.value };
+      btn.disabled = true;
+      google.script.run.withSuccessHandler(function (r) {
+        btn.disabled = false;
+        if (!r || !r.success) { showToast((r && r.message) || 'Could not save', 'error'); return; }
+        showToast('User updated', 'success'); close(); loadUsers(true);
+      }).withFailureHandler(function (e) { btn.disabled = false; showToast('Error: ' + (e.message || e), 'error'); }).updateUser(userId, d);
+    };
+  }
+  window.editUser = editUser;
 
   function editUserRole(userId, currentRole) {
     var curType = currentRole === 'Cadet' || currentRole === 'User' ? 'Cadet' : (currentRole === 'Guest' ? 'Guest' : 'Adult');
