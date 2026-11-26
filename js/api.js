@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   var CFG = window.RECON_CONFIG, SKEY = 'reconSession';
-  var NEVER_QUEUE = /^(login|register|guest|changePassword|resetUserPassword|notif)/;
+  var NEVER_QUEUE = /^(login|register|guest|changePassword|resetUserPassword|createUser|notif)/;
   var MUTATION = /^(add|update|delete|approve|deny|import|register|process|sync|cleanup|standardize|normalize|set|reset|send)/;
   var ONLINE_ONLY = /^(shield(Import|Sources|PointsTable|Platoons|Pubspeak)|roll|comp)/;   // Shield import tools: never cached, never queued offline
   var ALIAS = { authenticateUser: 'login', registerUser: 'register', loginAsGuest: 'guest', changeUserPassword: 'changePassword' };

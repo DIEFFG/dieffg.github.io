@@ -4692,6 +4692,7 @@ function logout() {
     if (!isAutoRefresh) showLoading();
     if (isAutoRefresh) showCornerSpinner();
     if (!isAdmin()) { hideLoading(); return; }
+    var addBtn = document.getElementById('addUserBtn'); if (addBtn) addBtn.style.display = isSuperAdmin() ? '' : 'none';
     
     google.script.run
       .withSuccessHandler(function(users) {
@@ -4699,7 +4700,7 @@ function logout() {
         if (!tbody) { hideLoading(); return; }
         
         if (!users || users.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No users found</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No users found</td></tr>';
           hideLoading();
           return;
         }
@@ -4736,6 +4737,7 @@ function logout() {
             '<td>' + escapeHtml(u.email || '') + '</td>' +
             '<td>' + escapeHtml(u.battalion || '-') + '</td>' +
             '<td>' + escapeHtml(u.unit || '-') + '</td>' +
+            '<td><span class="badge badge-' + (u.accountType === 'Adult' ? 'info' : 'secondary') + '">' + escapeHtml(u.accountType || (u.role === 'Cadet' ? 'Cadet' : 'Adult')) + '</span></td>' +
             '<td>' + escapeHtml(u.role || '') + '</td>' +
             '<td>' + statusBadge + '</td>' +
             '<td class="actions-cell">' + actions + '</td></tr>';
@@ -4749,6 +4751,44 @@ function logout() {
       })
       .getAllUsers();
   }
+
+  // ---- Super Admin: create a user directly ----
+  var ADD_USER_ROLES = { Cadet: ['Cadet'], Adult: ['Instructor', 'Unit Officer', 'Battalion Commander', 'Judge', 'Admin', 'Super Admin'] };
+  function openAddUser() {
+    if (!isSuperAdmin()) { showToast('Only a Super Admin can create users', 'error'); return; }
+    var old = document.getElementById('auModal'); if (old) old.remove();
+    var o = document.createElement('div'); o.id = 'auModal'; o.className = 'modal-overlay active';
+    o.innerHTML = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><h3>Add user</h3><button class="modal-close" id="auX" aria-label="Close">&times;</button></div>' +
+      '<div class="modal-body" id="auBody">' +
+      '<div class="form-group"><label>Account type</label><select id="auType" class="form-control"><option value="Adult">Adult (officer, instructor, judge, admin)</option><option value="Cadet">Cadet</option></select></div>' +
+      '<div class="form-group"><label>Role</label><select id="auRole" class="form-control"></select></div>' +
+      '<div class="form-group"><label>First name</label><input id="auFirst" class="form-control"></div>' +
+      '<div class="form-group"><label>Last name</label><input id="auLast" class="form-control"></div>' +
+      '<div class="form-group"><label>Email</label><input id="auEmail" type="email" class="form-control"></div>' +
+      '<div class="form-group"><label>Battalion <span class="text-muted">(required for Battalion Commander and Unit Officer)</span></label><input id="auBn" class="form-control" placeholder="e.g. 5TTCF"></div>' +
+      '<div class="form-group"><label>Unit <span class="text-muted">(required for Unit Officer)</span></label><input id="auUnit" class="form-control"></div>' +
+      '<div class="form-group" id="auRegWrap"><label>Regimental number <span class="text-muted">(cadets, optional)</span></label><input id="auReg" class="form-control"></div>' +
+      '<p class="text-muted">A temporary password is created, shown here and emailed to the person. They must change it at first sign-in.</p></div>' +
+      '<div class="modal-footer"><button class="btn btn-outline" id="auCancel">Cancel</button><button class="btn btn-primary" id="auSave"><i class="fas fa-user-plus"></i> Create user</button></div></div>';
+    document.body.appendChild(o);
+    function fillRoles() { var t = document.getElementById('auType').value; document.getElementById('auRole').innerHTML = ADD_USER_ROLES[t].map(function (r) { return '<option>' + r + '</option>'; }).join(''); document.getElementById('auRegWrap').style.display = t === 'Cadet' ? '' : 'none'; }
+    document.getElementById('auType').onchange = fillRoles; fillRoles();
+    function close() { o.remove(); }
+    document.getElementById('auX').onclick = close; document.getElementById('auCancel').onclick = close;
+    document.getElementById('auSave').onclick = function () {
+      var btn = this, d = { accountType: document.getElementById('auType').value, role: document.getElementById('auRole').value, firstName: document.getElementById('auFirst').value, lastName: document.getElementById('auLast').value,
+        email: document.getElementById('auEmail').value, battalion: document.getElementById('auBn').value, unit: document.getElementById('auUnit').value, regimentalNumber: document.getElementById('auReg').value };
+      btn.disabled = true;
+      google.script.run.withSuccessHandler(function (r) {
+        btn.disabled = false;
+        if (!r || !r.success) { showToast((r && r.message) || 'Could not create user', 'error'); return; }
+        document.getElementById('auBody').innerHTML = '<p><b>' + escapeHtml(d.firstName + ' ' + d.lastName) + '</b> (' + escapeHtml(r.role) + ', ' + escapeHtml(r.accountType) + ')</p><p>' + escapeHtml(r.message) + '</p><p>Temporary password: <code id="auTemp" style="font-size:18px">' + escapeHtml(r.tempPassword) + '</code></p>';
+        document.getElementById('auSave').style.display = 'none'; document.getElementById('auCancel').textContent = 'Done';
+        showToast('User created', 'success'); loadUsers(true);
+      }).withFailureHandler(function (e) { btn.disabled = false; showToast('Error: ' + (e.message || e), 'error'); }).createUser(d);
+    };
+  }
+  window.openAddUser = openAddUser;
 
   function approveUser(userId) {
     if (!confirm('Approve this user registration? They will be granted access to the system and their cadet record will be activated.')) return;
