@@ -39,7 +39,7 @@
     var pg = document.createElement('div'); pg.id = 'page-reports'; pg.className = 'page';
     pg.innerHTML = '<div class="card"><div class="card-header"><h3><i class="fas fa-chart-bar"></i> Reports</h3></div><div class="card-body">' +
       '<div class="report-bar"><select id="repType" class="form-control">' + REPORTS.map(function (r) { return '<option value="' + r[0] + '">' + r[1] + '</option>'; }).join('') + '</select>' +
-      '<select id="repBn" class="form-control"><option value="">All battalions</option><option>1TTCF</option><option>2TTCF</option><option>3TTCF</option><option>4TTCF</option><option>5TTCF</option><option>6TTCF</option><option>MTTCF</option><option>SSB</option><option>FHQ</option></select>' +
+      '<select id="repBn" class="form-control"><option value="">All battalions</option><option>1TTCF</option><option>2TTCF</option><option>3TTCF</option><option>4TTCF</option><option>5TTCF</option><option>6TTCF</option><option>7TTCF</option><option>SSB</option><option>FHQ</option></select>' +
       '<button class="btn btn-primary" id="repRun"><i class="fas fa-play"></i> Run</button><button class="btn btn-outline" id="repCsv"><i class="fas fa-file-csv"></i> CSV</button><button class="btn btn-outline" id="repPrint"><i class="fas fa-print"></i> Print / PDF</button></div>' +
       '<div id="repOut" class="report-out"></div></div></div>';
     content.appendChild(pg);
