@@ -65,9 +65,11 @@
         '<div class="muted">Points method: ' + esc(s.method === 'TO BE CONFIRMED' ? 'not set yet' : s.method.replace(/_/g, ' ').toLowerCase()) + '</div>' +
         '<div class="muted">' + (s.confirmedRevision !== '' ? 'Imported revision ' + esc(s.confirmedRevision) : 'Nothing imported for this year') + '</div>' +
         '<div class="shi-actions"><button class="btn btn-primary btn-sm" data-pv="' + esc(s.competition) + '"' + (ready ? '' : ' disabled title="Set the web address and key first"') + '><i class="fas fa-eye"></i> Preview</button> ' +
+        (s.competition === 'PUBSPEAK' ? '<button class="btn btn-secondary btn-sm" data-ps="1"><i class="fas fa-keyboard"></i> Enter preliminary scores</button> ' : '') +
         '<button class="btn btn-outline btn-sm" data-src="' + esc(s.competition) + '"><i class="fas fa-link"></i> Connection</button></div></div></div>';
     }).join('');
     Array.prototype.forEach.call(document.querySelectorAll('[data-pv]'), function (b) { b.onclick = function () { preview(b.getAttribute('data-pv')); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-ps]'), function (b) { b.onclick = pubspeakModal; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-src]'), function (b) { b.onclick = function () { sourceModal(b.getAttribute('data-src')); }; });
   }
 
@@ -82,7 +84,7 @@
   }
   function showPreview(d) {
     var c = d.counts, rows = d.rows.map(function (r) {
-      return '<tr class="shi-row-' + esc(r.change || '') + '"><td>' + esc(r.name) + '<div class="muted">' + esc(r.battalion) + '</div></td><td>' + esc(r.status) + '</td><td>' + (r.rank === null ? '-' : esc(r.rank)) + '</td><td>' +
+      return '<tr class="shi-row-' + esc(r.change || '') + '"><td>' + esc(r.name) + '<div class="muted">' + esc(r.battalion) + '</div>' + (r.cadets && r.cadets.length ? '<div class="muted">' + r.cadets.map(function (c) { return esc(c.name) + ' ' + esc(c.score); }).join(' &middot; ') + '</div>' : '') + '</td><td>' + esc(r.status) + '</td><td>' + (r.rank === null ? '-' : esc(r.rank)) + '</td><td>' +
         (r.rawPoints === null ? '-' : esc(r.rawPoints)) + (r.rawMax ? ' / ' + esc(r.rawMax) : '') + '</td><td><b>' + (r.points === null || r.points === undefined ? '-' : esc(r.points)) + '</b>' +
         (r.before ? '<div class="muted">was ' + esc(r.before.points) + '</div>' : '') + '</td><td>' + esc(r.change || '') + '</td></tr>';
     }).join('');
@@ -119,6 +121,35 @@
     };
   }
 
+
+  // ---------- public speaking: enter preliminary scores ----------
+  function pubspeakModal() {
+    var body = '<p class="muted">Enter the <b>preliminary</b> score of each cadet, one per line: <b>regimental number, score</b>. Platoons come from each cadet\'s record in RECON. Only preliminaries count towards the Shield. You will see a preview before anything changes.</p>' +
+      '<label>Highest score a cadet can get <input id="shiPsMax" class="form-control" type="number" step="any" min="1" value="100"></label>' +
+      '<label>Scores <textarea id="shiPsRows" class="form-control" rows="10" placeholder="TT-12345, 78.5&#10;TT-12346, 81"></textarea></label>' +
+      '<label>Or choose a CSV file <input id="shiPsFile" type="file" accept=".csv,.txt"></label>';
+    modal('Enter preliminary scores (' + year + ')', body, '<button class="btn btn-outline" id="shiCancel">Cancel</button> <button class="btn btn-primary" id="shiPsGo">Preview</button>', true);
+    $('shiCancel').onclick = closeModal;
+    $('shiPsFile').onchange = function () { var f = this.files[0]; if (!f) return; var r = new FileReader(); r.onload = function () { $('shiPsRows').value = String(r.result).replace(/^﻿/, ''); }; r.readAsText(f); };
+    $('shiPsGo').onclick = function () {
+      var rows = parsePsRows($('shiPsRows').value);
+      if (!rows.length) { toast('Add at least one line.', 'error'); return; }
+      if (window.showLoading) window.showLoading();
+      api('shieldPubspeakEntry', [year, rows, $('shiPsMax').value]).then(function (d) {
+        if (window.hideLoading) window.hideLoading();
+        if (!d.success) { toast(d.error, 'error'); return; }
+        showPreview(d);
+      }).catch(err);
+    };
+  }
+  function parsePsRows(text) {
+    return String(text || '').split(/\r?\n/).map(function (ln) { return ln.trim(); }).filter(Boolean).map(function (ln) {
+      var p = ln.split(/[,\t;]+/).map(function (x) { return x.trim().replace(/^"|"$/g, ''); });
+      return { reg: p[0] || '', score: p.length > 1 ? p[p.length - 1] : '' };
+    }).filter(function (r) { return !/^(reg|regimental|number|id)/i.test(r.reg) || /\d/.test(r.score); });
+  }
+  window.shieldParsePsRows = parsePsRows;
+
   // ---------- scoring rules ----------
   function rulesModal() {
     api('shieldPointsTableGet').then(function (d) {
@@ -135,7 +166,10 @@
         '<label>Order (codes, e.g. ORIENT,RECORDS,DRILL)<input id="shiTbo" class="form-control" value="' + esc(d.settings.tieBreakOrder) + '"></label>' +
         '<h4>Public speaking age limit</h4><p class="muted">Cadets may be this age or younger on the competition date. The date is the second Saturday of December (' + esc(d.pubspeak.date) + ' for ' + d.pubspeak.year + ')' + (d.pubspeak.isDefault ? '' : ', set by an Admin') + '. Change it only if the competition moves.</p>' +
         '<label>Oldest age allowed <input id="shiPsAge" class="form-control" type="number" min="8" max="30" value="' + esc(d.pubspeak.maxAge) + '"></label> ' +
-        '<label>Competition date (leave empty for the second Saturday of December)<input id="shiPsDate" class="form-control" type="date" value="' + (d.pubspeak.isDefault ? '' : esc(d.pubspeak.date)) + '"></label>';
+        '<label>Competition date (leave empty for the second Saturday of December)<input id="shiPsDate" class="form-control" type="date" value="' + (d.pubspeak.isDefault ? '' : esc(d.pubspeak.date)) + '"></label>' +
+        '<h4>Public speaking: platoon score</h4><p class="muted">Only preliminary scores count. Each platoon\'s score is built from its cadets\' preliminary scores, then platoons are ranked.</p>' +
+        '<select id="shiPsMethod" class="form-control">' + [['AVERAGE', 'Average of its cadets'], ['SUM', 'Total of its cadets'], ['BEST', 'Best cadet'], ['TOPN', 'Total of the best N cadets']].map(function (m) { return '<option value="' + m[0] + '"' + (d.settings.pubspeakMethod === m[0] ? ' selected' : '') + '>' + m[1] + '</option>'; }).join('') + '</select> ' +
+        '<label>N (for best N cadets)<input id="shiPsN" class="form-control" type="number" min="1" max="20" value="' + esc(d.settings.pubspeakTopN || '3') + '"></label>';
       modal('Scoring rules', body, '<button class="btn btn-outline" id="shiCancel">Cancel</button> <button class="btn btn-primary" id="shiSave">Save rules</button>', true);
       $('shiCancel').onclick = closeModal;
       $('shiSave').onclick = function () {
@@ -146,7 +180,7 @@
           el.querySelector('.shi-rp').value.split(/\n+/).forEach(function (ln) { ln = ln.trim(); if (!ln) return; var m = /^(\d+)\s*[:=,]\s*(\d+(\.\d+)?)$/.exec(ln); if (!m) bad = c + ': "' + ln + '" is not rank:points'; else ranks.push({ competition: c, rank: parseInt(m[1], 10), points: parseFloat(m[2]) }); });
         });
         if (bad) { toast(bad, 'error'); return; }
-        api('shieldPointsTableSet', [{ rules: rules, rankPoints: ranks, settings: { tieBreak: $('shiTb').value, tieBreakOrder: $('shiTbo').value, pubspeakMaxAge: $('shiPsAge').value, pubspeakDate: $('shiPsDate').value } }]).then(function (r) {
+        api('shieldPointsTableSet', [{ rules: rules, rankPoints: ranks, settings: { tieBreak: $('shiTb').value, tieBreakOrder: $('shiTbo').value, pubspeakMaxAge: $('shiPsAge').value, pubspeakMethod: $('shiPsMethod').value, pubspeakTopN: $('shiPsN').value, pubspeakDate: $('shiPsDate').value } }]).then(function (r) {
           if (!r.success) { toast(r.error, 'error'); return; } toast('Rules saved', 'success'); closeModal(); load();
         }).catch(err);
       };

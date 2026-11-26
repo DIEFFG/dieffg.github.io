@@ -4,7 +4,7 @@
   var CFG = window.RECON_CONFIG, SKEY = 'reconSession';
   var NEVER_QUEUE = /^(login|register|guest|changePassword|resetUserPassword|notif)/;
   var MUTATION = /^(add|update|delete|approve|deny|import|register|process|sync|cleanup|standardize|normalize|set|reset|send)/;
-  var ONLINE_ONLY = /^(shield(Import|Sources|PointsTable|Platoons)|roll)/;   // Shield import tools: never cached, never queued offline
+  var ONLINE_ONLY = /^(shield(Import|Sources|PointsTable|Platoons|Pubspeak)|roll)/;   // Shield import tools: never cached, never queued offline
   var ALIAS = { authenticateUser: 'login', registerUser: 'register', loginAsGuest: 'guest', changeUserPassword: 'changePassword' };
 
   // ---------- session ----------
@@ -44,7 +44,7 @@
   function call(action, args) {
     args = args || [];
     var online = ONLINE_ONLY.test(action);
-    var mut = !online && MUTATION.test(action) && !NEVER_QUEUE.test(action), cid = (mut || (online && /(Preview|Confirm|Discard|Set|Check|Submit|Decide|Add)$/.test(action))) ? uuid() : '';
+    var mut = !online && MUTATION.test(action) && !NEVER_QUEUE.test(action), cid = (mut || (online && /(Preview|Confirm|Discard|Set|Check|Submit|Decide|Add|Entry)$/.test(action))) ? uuid() : '';
     return post(action, args, cid).then(function (j) {
       if (j.ok) {
         if (!mut && !online && !/^(login|guest|me|notif|getUser)/.test(action)) cacheSet(action, args, j.data);
