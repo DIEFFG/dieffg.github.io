@@ -90,15 +90,20 @@
       if (!d.success) { toast(d.error, 'error'); return; } rec = d; drawList();
     }).catch(err);
   }
+  function progressOf(p) { return rec.records.filter(function (r) { var t = recTotal(p.id, r.code); return t !== null && t >= 0; }).length; }
   function drawList() {
-    var rows = rec.platoons.map(function (p) {
-      var done = rec.records.filter(function (r) { return recTotal(p.id, r.code) >= 0 && recTotal(p.id, r.code) !== null; }).length;
-      return '<tr><td><b>' + esc(p.name) + '</b><div class="rl-sub">' + esc(p.battalion) + '</div></td><td><span class="rl-badge ' + (done === rec.records.length ? 'rl-ok' : done ? 'rl-warn' : 'rl-muted') + '">' + done + ' of ' + rec.records.length + ' records</span></td><td><button class="btn btn-' + (rec.canScore ? 'primary' : 'outline') + ' btn-sm" data-p="' + esc(p.id) + '">' + (rec.canScore ? 'Score' : 'View') + '</button></td></tr>';
+    var byBn = {}; rec.platoons.forEach(function (p) { (byBn[p.battalion || 'Other'] = byBn[p.battalion || 'Other'] || []).push(p); });
+    var sel = '<option value="">Select a platoon...</option>' + Object.keys(byBn).sort().map(function (b) {
+      return '<optgroup label="' + esc(b) + '">' + byBn[b].map(function (p) { var n = progressOf(p); return '<option value="' + esc(p.id) + '">' + esc(p.name) + (n ? ' (' + n + ' of ' + rec.records.length + ' scored)' : '') + '</option>'; }).join('') + '</optgroup>';
     }).join('');
+    var scored = rec.platoons.filter(function (p) { return progressOf(p) > 0; });
     modal('Platoon Records Review: your scoring', (rec.canScore ? '' : '<div class="rl-note rl-on"><i class="fas fa-lock"></i> This competition is finalised. Scores are locked.</div>') +
-      (rec.platoons.length ? '<div class="rl-scroll"><table class="data-table"><thead><tr><th>Platoon</th><th>Your progress</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p>No platoons are open for scoring yet.</p>'),
+      (rec.platoons.length ? '<div class="form-group"><label>Platoon</label><select id="cpPick" class="form-control">' + sel + '</select></div><p class="muted">No nominal roll is needed. Pick the platoon and score its records.</p>' +
+        (scored.length ? '<h4>Your progress</h4><div class="rl-scroll"><table class="data-table"><tbody>' + scored.map(function (p) { var n = progressOf(p); return '<tr><td><b>' + esc(p.name) + '</b><div class="rl-sub">' + esc(p.battalion) + '</div></td><td><span class="rl-badge ' + (n === rec.records.length ? 'rl-ok' : 'rl-warn') + '">' + n + ' of ' + rec.records.length + ' records</span></td><td><button class="btn btn-outline btn-sm" data-p="' + esc(p.id) + '">' + (rec.canScore ? 'Continue' : 'View') + '</button></td></tr>'; }).join('') + '</tbody></table></div>' : '')
+        : '<p>No platoons are set up yet. An Admin can add them under Import results > Platoons.</p>'),
       '<button class="btn btn-outline" id="cpClose">Close</button>');
     $('cpClose').onclick = closeModal;
+    var pick = $('cpPick'); if (pick) pick.onchange = function () { if (pick.value) drawForm(pick.value); };
     Array.prototype.forEach.call(document.querySelectorAll('[data-p]'), function (b) { b.onclick = function () { drawForm(b.getAttribute('data-p')); }; });
   }
   function drawForm(pid) {
