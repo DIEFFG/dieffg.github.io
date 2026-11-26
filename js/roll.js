@@ -16,6 +16,15 @@
   var STATE = { none: ['Not registered', 'muted'], pending: ['Waiting for approval', 'warn'], rejected: ['Returned: fix and resubmit', 'bad'], registered: ['Registered', 'ok'], 'registered-update': ['Registered (update waiting)', 'ok'] };
   var info = null, injected = false, W = null, xlsxLoading = null;
 
+  function compLabel(code) { var c = (info && info.competitions || []).filter(function (x) { return x.code === code; })[0]; return c ? c.label : code; }
+  function compList(codes) { if (!codes || !codes.length) return ''; if (info && info.competitions && codes.length === info.competitions.length) return 'All competitions'; return codes.map(compLabel).join(', '); }
+  function compBoxes(selected) {
+    return '<fieldset class="rl-comps"><legend><b>Which competitions is this roll for?</b></legend>' + (info.competitions || []).map(function (c) {
+      return '<label class="rl-cb"><input type="checkbox" class="rl-comp" value="' + esc(c.code) + '"' + (selected.indexOf(c.code) >= 0 ? ' checked' : '') + '> ' + esc(c.label) + '</label>';
+    }).join(' ') + '<div class="muted">A platoon can register for several competitions. The same cadets may appear in more than one.</div></fieldset>';
+  }
+  function pickedComps() { return Array.prototype.map.call(document.querySelectorAll('.rl-comp:checked'), function (x) { return x.value; }); }
+
   // ---------- modal ----------
   function modal(title, body, footer) {
     var old = $('rlModal'); if (old) old.remove();
@@ -33,7 +42,7 @@
     pg.innerHTML = '<div class="section-header"><h2><i class="fas fa-clipboard-check"></i> Platoon registration</h2><div class="section-actions" id="rlTools"></div></div>' +
       '<p class="muted">Every platoon registers with its Nominal Roll (form C19A) to take part in Cadet Force activities. Upload the roll, fix anything RECON flags, then it goes to the Battalion Commander or an Admin for approval.</p>' +
       '<div id="rlBanner"></div><div id="rlSum" class="rl-sum"></div>' +
-      '<div class="card"><div class="card-header"><h3>Platoons</h3></div><div class="card-body"><div class="rl-scroll"><table class="data-table"><thead><tr><th>Platoon</th><th>Battalion</th><th>Status</th><th>Cadets</th><th></th></tr></thead><tbody id="rlRows"></tbody></table></div></div></div>' +
+      '<div class="card"><div class="card-header"><h3>Platoons</h3></div><div class="card-body"><div class="rl-scroll"><table class="data-table"><thead><tr><th>Platoon</th><th>Battalion</th><th>Status</th><th>Registered for</th><th>Cadets</th><th></th></tr></thead><tbody id="rlRows"></tbody></table></div></div></div>' +
       '<div class="card"><div class="card-header"><h3>Roll history</h3></div><div class="card-body" id="rlHist"></div></div>';
     content.appendChild(pg);
     var nav = document.querySelector('.nav-menu'), li = document.createElement('li'), after = document.querySelector('[data-page="cadets"]');
@@ -45,7 +54,7 @@
 
   function load() {
     inject(); if (window.hideLoading) window.hideLoading();
-    if (!canUse()) { $('rlRows').innerHTML = '<tr><td colspan="5">Registration is for Unit Officers, Battalion Commanders and Admins.</td></tr>'; return; }
+    if (!canUse()) { $('rlRows').innerHTML = '<tr><td colspan="6">Registration is for Unit Officers, Battalion Commanders and Admins.</td></tr>'; return; }
     api('rollPlatoons').then(function (d) { info = d; render(); }).catch(err);
     api('rollList').then(function (d) { renderHist(d.rolls); }).catch(function () {});
   }
@@ -66,15 +75,15 @@
       if (p.state === 'pending' && info.canApprove) acts += '<button class="btn btn-primary btn-sm" data-rv="' + esc(p.rollId) + '"><i class="fas fa-check"></i> Review</button> ';
       else if (p.state !== 'none' && p.rollId) acts += '<button class="btn btn-outline btn-sm" data-rv="' + esc(p.rollId) + '"><i class="fas fa-eye"></i> View roll</button> ';
       if (p.state !== 'pending' || !info.canApprove) acts += '<button class="btn ' + (p.state === 'registered' ? 'btn-outline' : 'btn-secondary') + ' btn-sm" data-up="' + esc(p.id) + '"><i class="fas fa-upload"></i> ' + (p.state === 'none' || p.state === 'rejected' ? 'Upload roll' : 'Upload new roll') + '</button>';
-      return '<tr><td><b>' + esc(p.name) + '</b>' + (p.note ? '<div class="rl-sub rl-bad-t">' + esc(p.note) + '</div>' : '') + '</td><td>' + esc(p.battalion || '') + '</td><td><span class="rl-badge rl-' + st[1] + '">' + st[0] + '</span></td><td>' + (p.cadetCount || '') + '</td><td class="rl-act">' + acts + '</td></tr>';
-    }).join('') : '<tr><td colspan="5">No platoons yet. ' + (info.canAdd ? 'Use <b>Add platoon</b> to add your platoon number.' : 'An Admin needs to add the platoons.') + '</td></tr>';
+      return '<tr><td><b>' + esc(p.name) + '</b>' + (p.note ? '<div class="rl-sub rl-bad-t">' + esc(p.note) + '</div>' : '') + '</td><td>' + esc(p.battalion || '') + '</td><td><span class="rl-badge rl-' + st[1] + '">' + st[0] + '</span></td><td>' + (p.registeredFor && p.registeredFor.length ? '<span class="rl-badge rl-ok">' + esc(compList(p.registeredFor)) + '</span>' : '<span class="muted">None yet</span>') + (p.pendingFor && p.pendingFor.length ? '<div class="rl-sub">Waiting: ' + esc(compList(p.pendingFor)) + '</div>' : '') + '</td><td>' + (p.cadetCount || '') + '</td><td class="rl-act">' + acts + '</td></tr>';
+    }).join('') : '<tr><td colspan="6">No platoons yet. ' + (info.canAdd ? 'Use <b>Add platoon</b> to add your platoon number.' : 'An Admin needs to add the platoons.') + '</td></tr>';
     Array.prototype.forEach.call(document.querySelectorAll('[data-up]'), function (b) { b.onclick = function () { startRegister(b.getAttribute('data-up')); }; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-rv]'), function (b) { b.onclick = function () { review(b.getAttribute('data-rv')); }; });
   }
   function renderHist(list) {
     var el = $('rlHist'); if (!el) return;
-    el.innerHTML = list.length ? '<div class="rl-scroll"><table class="data-table"><thead><tr><th>Platoon</th><th>Submitted</th><th>By</th><th>Cadets</th><th>Status</th><th>Note</th></tr></thead><tbody>' + list.map(function (r) {
-      return '<tr><td>' + esc(r.platoonName) + '</td><td>' + esc((r.submittedAt || '').substr(0, 10)) + '</td><td>' + esc(r.submittedByName) + '</td><td>' + r.cadetCount + '</td><td>' + esc(r.status.toLowerCase()) + '</td><td>' + esc(r.decisionNote || '') + '</td></tr>';
+    el.innerHTML = list.length ? '<div class="rl-scroll"><table class="data-table"><thead><tr><th>Platoon</th><th>Submitted</th><th>By</th><th>Cadets</th><th>Competitions</th><th>Status</th><th>Note</th></tr></thead><tbody>' + list.map(function (r) {
+      return '<tr><td>' + esc(r.platoonName) + '</td><td>' + esc((r.submittedAt || '').substr(0, 10)) + '</td><td>' + esc(r.submittedByName) + '</td><td>' + r.cadetCount + '</td><td>' + esc(compList(r.competitions)) + '</td><td>' + esc(r.status.toLowerCase()) + '</td><td>' + esc(r.decisionNote || '') + '</td></tr>';
     }).join('') + '</tbody></table></div>' : '<p class="muted">No rolls submitted yet.</p>';
   }
 
@@ -110,7 +119,7 @@
     var p = info.platoons.filter(function (x) { return x.id === platoonId; })[0]; if (!p) return;
     W = { platoon: p, header: null, rows: [], issues: [], counts: null, matches: null, ok: false, fixed: [], file: '', dirty: false };
     modal('Register ' + p.name,
-      '<div class="rl-drop"><p><b>Step 1.</b> Choose the Excel file of the Nominal Roll (form C19A) for <b>' + esc(p.name) + '</b>.</p>' +
+      compBoxes([]) + '<div class="rl-drop"><p><b>Step 1.</b> Choose the Excel file of the Nominal Roll (form C19A) for <b>' + esc(p.name) + '</b>.</p>' +
       '<input type="file" id="rlFile" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">' +
       '<p class="muted">RECON reads the <b>C19A (Cadets)</b> sheet. Other sheets, and the Recruits sheet, are ignored. The file is read on this device; only the roll details are sent for checking.</p></div><div id="rlRes"></div>',
       '<button class="btn btn-outline" id="rlCancel">Close</button>');
@@ -127,7 +136,7 @@
         check();
       }).catch(function (e) { $('rlRes').innerHTML = '<div class="rl-note rl-on">' + esc(e && e.message ? e.message : 'The file could not be read.') + '</div>'; });
   }
-  function payload() { return { platoonId: W.platoon.id, header: W.header, rows: W.rows.map(function (r) { return { n: r.n, dobIsDate: !!r.dobIsDate, cells: r.cells }; }) }; }
+  function payload() { return { platoonId: W.platoon.id, competitions: pickedComps(), header: W.header, rows: W.rows.map(function (r) { return { n: r.n, dobIsDate: !!r.dobIsDate, cells: r.cells }; }) }; }
   function check() {
     $('rlRes').innerHTML = '<p>Checking the roll...</p>';
     api('rollCheck', [payload()]).then(function (d) {
@@ -142,7 +151,7 @@
   function showResult() {
     var c = W.counts, errs = W.issues.filter(function (i) { return i.level === 'error'; }), warns = W.issues.filter(function (i) { return i.level === 'warn'; });
     var h = '<div class="rl-chips"><span class="rl-chip rl-c-err">' + c.errors + ' to fix</span><span class="rl-chip rl-c-warn">' + c.warnings + ' to check</span><span class="rl-chip rl-c-fix">' + W.fixed.length + ' fixed for you</span><span class="rl-chip">' + c.cadets + ' cadets</span></div>';
-    h += '<p class="muted">' + esc(W.file) + ' &middot; sheet "' + esc(W.sheet) + '" &middot; ' + esc(W.header.unitLine || '') + '</p>';
+    h += W.edit ? '<p class="muted">Editing the roll for ' + esc(W.platoon.name) + '. Change any cell, press Check again, then Save changes.</p>' : '<p class="muted">' + esc(W.file) + ' &middot; sheet "' + esc(W.sheet) + '" &middot; ' + esc(W.header.unitLine || '') + '</p>';
     if (W.ok) h += '<div class="rl-note rl-good"><i class="fas fa-check-circle"></i> No problems that stop registration. ' + (warns.length ? 'Please look at the ' + warns.length + ' item(s) to check, then submit.' : 'You can submit this roll.') + '</div>';
     else h += '<div class="rl-note rl-on"><i class="fas fa-exclamation-circle"></i> Fix the red items below, in the table or in your Excel file, then press <b>Check again</b>. Row numbers match the rows in your Excel sheet.</div>';
     if (W.matches) h += '<p class="muted">If approved: <b>' + W.matches.added + '</b> new cadet(s) added, <b>' + W.matches.updated + '</b> updated' + (W.matches.moved.length ? ', <b>' + W.matches.moved.length + '</b> moved from another unit' : '') + (W.matches.missing.length ? '. <b>' + W.matches.missing.length + '</b> cadet(s) already listed for this platoon are not on the roll (they are not removed).' : '.') + '</p>';
@@ -170,8 +179,8 @@
       li.onclick = function () { var td = $('rlc-' + li.getAttribute('data-r') + '-' + li.getAttribute('data-c')); if (td) { td.scrollIntoView({ block: 'center', inline: 'center' }); var i = td.querySelector('input'); if (i) i.focus(); } };
     });
     $('rlFoot').innerHTML = '<button class="btn btn-outline" id="rlCancel">Close</button><button class="btn btn-outline" id="rlRep"><i class="fas fa-download"></i> Download problem list</button>' +
-      '<button class="btn btn-secondary" id="rlRecheck"><i class="fas fa-sync"></i> Check again</button><button class="btn btn-primary" id="rlSubmit"' + (W.ok ? '' : ' disabled title="Fix the red items first"') + '><i class="fas fa-paper-plane"></i> Submit for approval</button>';
-    $('rlCancel').onclick = closeModal; $('rlRecheck').onclick = check; $('rlRep').onclick = downloadReport; $('rlSubmit').onclick = submit;
+      '<button class="btn btn-secondary" id="rlRecheck"><i class="fas fa-sync"></i> Check again</button><button class="btn btn-primary" id="rlSubmit"' + (W.ok ? '' : ' disabled title="Fix the red items first"') + '>' + (W.edit ? '<i class="fas fa-save"></i> Save changes' : '<i class="fas fa-paper-plane"></i> Submit for approval') + '</button>';
+    $('rlCancel').onclick = closeModal; $('rlRecheck').onclick = check; $('rlRep').onclick = downloadReport; $('rlSubmit').onclick = W.edit ? saveEdit : submit;
   }
   function downloadReport() {
     var q = function (s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; };
@@ -184,6 +193,7 @@
   }
   function submit() {
     if (W.dirty) { toast('You changed the table. Press Check again first.', 'error'); return; }
+    if (!pickedComps().length) { toast('Tick at least one competition this roll is for.', 'error'); return; }
     if (!window.confirm('Submit this roll of ' + W.counts.cadets + ' cadets for approval?')) return;
     if (window.showLoading) window.showLoading();
     api('rollSubmit', [payload()]).then(function (d) {
@@ -202,6 +212,8 @@
       var r = d.roll, m = d.matches, st = r.status.toLowerCase();
       var h = '<p><b>' + esc(r.unit) + ' - Platoon ' + esc(r.platoonNumber) + '</b> &middot; Term ' + esc(r.term) + ' &middot; ' + esc(r.cadetCount) + ' cadets &middot; ' + esc(st) + '</p>' +
         '<p class="muted">Submitted by ' + esc(r.submittedByName) + ' on ' + esc((r.submittedAt || '').substr(0, 10)) + '. Unit Commander: ' + esc(r.unitCommander) + '. Battalion Commander: ' + esc(r.bnCommander) + '.</p>';
+      h += '<p><b>Competitions:</b> ' + esc(compList(r.competitions)) + (r.legacyAll ? ' <span class="muted">(registered before competitions were chosen)</span>' : '') + '</p>';
+      if (r.editLog && r.editLog.length) h += '<p class="muted">Edited ' + r.editLog.length + ' time(s); last by ' + esc(r.editLog[r.editLog.length - 1].by) + ' on ' + esc(r.editLog[r.editLog.length - 1].at.substr(0, 10)) + '.</p>';
       if (r.approvals && r.approvals.length) h += '<p class="muted">Approved so far by: ' + r.approvals.map(function (a) { return esc(a.name) + ' (' + (a.role === 'BC' ? 'Battalion Commander' : 'Admin') + ')'; }).join(', ') + '.</p>';
       if (r.decisionNote) h += '<div class="rl-note">' + esc(r.decisionNote) + '</div>';
       if (m) h += '<p class="muted">If approved: <b>' + m.added + '</b> new cadet(s) added, <b>' + m.updated + '</b> updated' + (m.moved.length ? ', <b>' + m.moved.length + '</b> moved from another unit' : '') + (m.missing.length ? '. Not on the roll (kept): ' + m.missing.map(function (x) { return esc(x.name); }).join(', ') : '') + '.</p>';
@@ -209,8 +221,11 @@
         d.rows.map(function (x) { return '<tr><th>' + x.n + '</th>' + COLS.map(function (k) { return '<td>' + esc(x[k[0]]) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
       else h += '<p class="muted">The cadet details are removed once a roll is replaced or returned.</p>';
       var f = '<button class="btn btn-outline" id="rlCancel">Close</button>';
+      var canEdit = isAdmin() && (r.status === 'APPROVED' || r.status === 'SUBMITTED') && d.rows.length;
+      if (canEdit) f += '<button class="btn btn-secondary" id="rlEdit"><i class="fas fa-edit"></i> Edit roll</button>';
       if (d.canDecide) f += '<button class="btn btn-outline rl-ret" id="rlRet"><i class="fas fa-undo"></i> Return for fixes</button><button class="btn btn-primary" id="rlApp"><i class="fas fa-check"></i> Approve</button>';
       modal('Nominal roll', h, f); $('rlCancel').onclick = closeModal;
+      if (canEdit) $('rlEdit').onclick = function () { startEdit(d); };
       if (d.canDecide) {
         $('rlApp').onclick = function () {
           if (!window.confirm('Approve this roll? ' + (m ? m.added + ' new cadet(s) will be added and ' + m.updated + ' updated. ' : '') + 'The platoon becomes registered.')) return;
@@ -223,6 +238,26 @@
       }
     }).catch(err);
   }
+  // ---------- Admin: edit a roll ----------
+  function startEdit(d) {
+    var r = d.roll;
+    W = { platoon: { id: r.platoonId, name: r.unit + ' - Platoon ' + r.platoonNumber }, header: { date: r.rollDate, term: r.term, unitLine: r.unitLine, school: r.school, unitCommander: r.unitCommander, bnCommander: r.bnCommander },
+          rows: d.rows.map(function (x) { var c = {}; COLS.forEach(function (k) { c[k[0]] = x[k[0]]; }); return { n: x.n, dobIsDate: true, cells: c }; }), issues: [], counts: null, matches: null, ok: false, fixed: [], file: '', sheet: '', first: true, dirty: false, edit: r.id };
+    modal('Edit roll: ' + W.platoon.name, compBoxes(r.competitions) + '<div id="rlRes"></div>', '<button class="btn btn-outline" id="rlCancel">Close</button>');
+    $('rlCancel').onclick = closeModal; check();
+  }
+  function saveEdit() {
+    if (W.dirty) { toast('You changed the table. Press Check again first.', 'error'); return; }
+    var comps = pickedComps(); if (!comps.length) { toast('Tick at least one competition.', 'error'); return; }
+    if (!window.confirm('Save these changes? The cadet records for this platoon will be updated from the roll.')) return;
+    if (window.showLoading) window.showLoading();
+    api('rollEdit', [{ id: W.edit, competitions: comps, header: W.header, rows: W.rows.map(function (r) { return { n: r.n, dobIsDate: true, cells: r.cells }; }) }]).then(function (d) {
+      if (window.hideLoading) window.hideLoading();
+      if (!d.success) { toast(d.error, 'error'); if (d.issues) { W.issues = d.issues; W.counts = d.counts; W.ok = false; showResult(); } return; }
+      closeModal(); toast('Roll updated' + (d.removedRegNos && d.removedRegNos.length ? '. Reg. numbers no longer on the roll: ' + d.removedRegNos.join(', ') + ' (their cadet records were kept)' : ''), 'success'); load();
+    }).catch(err);
+  }
+
   function decide(d) {
     api('rollDecide', [d]).then(function (r) {
       if (!r.success) { toast(r.error, 'error'); return; }
