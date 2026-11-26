@@ -60,9 +60,9 @@
 
   function renderCards() {
     $('shiCards').innerHTML = sources.map(function (s) {
-      var st = STATE[s.state] || STATE['not-imported'], ready = s.url && s.hasKey;
+      var st = STATE[s.state] || STATE['not-imported'], ready = (s.url && s.hasKey) || s.internal;
       return '<div class="card shi-card"><div class="card-body"><div class="shi-top"><h4>' + esc(s.label) + '</h4><span class="shi-badge shi-' + st[1] + '">' + st[0] + '</span></div>' +
-        '<div class="muted">Points method: ' + esc(s.method === 'TO BE CONFIRMED' ? 'not set yet' : s.method.replace(/_/g, ' ').toLowerCase()) + '</div>' +
+        (s.internal ? '<div class="muted"><i class="fas fa-check-circle"></i> Scored in RECON and finalised</div>' : '') + '<div class="muted">Points method: ' + esc(s.method === 'TO BE CONFIRMED' ? 'not set yet' : s.method.replace(/_/g, ' ').toLowerCase()) + '</div>' +
         '<div class="muted">' + (s.confirmedRevision !== '' ? 'Imported revision ' + esc(s.confirmedRevision) : 'Nothing imported for this year') + '</div>' +
         '<div class="shi-actions"><button class="btn btn-primary btn-sm" data-pv="' + esc(s.competition) + '"' + (ready ? '' : ' disabled title="Set the web address and key first"') + '><i class="fas fa-eye"></i> Preview</button> ' +
         (s.competition === 'PUBSPEAK' ? '<button class="btn btn-secondary btn-sm" data-ps="1"><i class="fas fa-keyboard"></i> Enter preliminary scores</button> ' : '') +

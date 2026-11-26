@@ -259,6 +259,10 @@ function initializeApp() {
       showToast('Access denied. Only Admins can import results.', 'error');
       return;
     }
+    if (page === 'competitions' && !(window.reconCompAllowed && window.reconCompAllowed())) {
+      showToast('Access denied. Competitions is for Judges and Admins.', 'error');
+      return;
+    }
     if (page === 'roll' && !(window.reconRollAllowed && window.reconRollAllowed())) {
       showToast('Access denied. Registration is for Unit Officers, Battalion Commanders and Admins.', 'error');
       return;
@@ -294,7 +298,8 @@ function initializeApp() {
       'users': 'User Management',
       'reports': 'Reports',
       'shield-import': 'Import Shield results',
-      'roll': 'Platoon registration'
+      'roll': 'Platoon registration',
+      'competitions': 'Competitions'
     };
     var titleEl = document.getElementById('pageTitle');
     if (titleEl) titleEl.textContent = titles[page] || page;
@@ -340,6 +345,7 @@ function initializeApp() {
       case 'reports': if (window.loadReports) window.loadReports(); break;
       case 'shield-import': if (window.loadShieldImport) window.loadShieldImport(); break;
       case 'roll': if (window.loadRoll) window.loadRoll(); break;
+      case 'competitions': if (window.loadCompetitions) window.loadCompetitions(); break;
       case 'users': 
         if (isAdmin()) { loadUsers(); } else { hideLoading(); }
         break;
@@ -4787,10 +4793,10 @@ function logout() {
   }
 
   function editUserRole(userId, currentRole) {
-    var newRole = prompt('Enter new role (' + (isSuperAdmin() ? 'Super Admin, Admin, ' : '') + 'Instructor, Battalion Commander, Unit Officer, Cadet, Guest):', currentRole);
+    var newRole = prompt('Enter new role (' + (isSuperAdmin() ? 'Super Admin, Admin, ' : '') + 'Instructor, Battalion Commander, Unit Officer, Judge, Cadet, Guest):', currentRole);
     if (!newRole || newRole === currentRole) return;
     
-    var validRoles = ['Super Admin', 'Admin', 'Instructor', 'Battalion Commander', 'Unit Officer', 'Cadet', 'Guest'];
+    var validRoles = ['Super Admin', 'Admin', 'Instructor', 'Battalion Commander', 'Unit Officer', 'Judge', 'Cadet', 'Guest'];
     var isValid = false;
     for (var i = 0; i < validRoles.length; i++) {
       if (validRoles[i] === newRole) {
