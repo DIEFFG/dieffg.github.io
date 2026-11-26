@@ -4833,39 +4833,39 @@ function logout() {
   }
 
   function editUserRole(userId, currentRole) {
-    var newRole = prompt('Enter new role (' + (isSuperAdmin() ? 'Super Admin, Admin, ' : '') + 'Instructor, Battalion Commander, Unit Officer, Judge, Cadet, Guest):', currentRole);
-    if (!newRole || newRole === currentRole) return;
-    
-    var validRoles = ['Super Admin', 'Admin', 'Instructor', 'Battalion Commander', 'Unit Officer', 'Judge', 'Cadet', 'Guest'];
-    var isValid = false;
-    for (var i = 0; i < validRoles.length; i++) {
-      if (validRoles[i] === newRole) {
-        isValid = true;
-        break;
-      }
+    var curType = currentRole === 'Cadet' || currentRole === 'User' ? 'Cadet' : (currentRole === 'Guest' ? 'Guest' : 'Adult');
+    var sup = isSuperAdmin();
+    var BY_TYPE = { Cadet: ['Cadet'], Adult: ['Instructor', 'Unit Officer', 'Battalion Commander', 'Judge'].concat(sup ? ['Admin', 'Super Admin'] : []), Guest: ['Guest'] };
+    var old = document.getElementById('urModal'); if (old) old.remove();
+    var o = document.createElement('div'); o.id = 'urModal'; o.className = 'modal-overlay active';
+    o.innerHTML = '<div class="modal" role="dialog" aria-modal="true"><div class="modal-header"><h3>Change role</h3><button class="modal-close" id="urX" aria-label="Close">&times;</button></div><div class="modal-body">' +
+      '<div class="form-group"><label>Account type</label><select id="urType" class="form-control"'  + '><option>Adult</option><option>Cadet</option>' + (curType === 'Guest' ? '<option>Guest</option>' : '') + '</select>' + '</div>' +
+      '<div class="form-group"><label>Role</label><select id="urRole" class="form-control"></select></div></div>' +
+      '<div class="modal-footer"><button class="btn btn-outline" id="urCancel">Cancel</button><button class="btn btn-primary" id="urSave">Save</button></div></div>';
+    document.body.appendChild(o);
+    var typeEl = document.getElementById('urType'), roleEl = document.getElementById('urRole');
+    typeEl.value = curType;
+    function fill() {
+      var list = BY_TYPE[typeEl.value] || [];
+      if (typeEl.value === curType && list.indexOf(currentRole === 'User' ? 'Cadet' : currentRole) < 0 && currentRole) list = list.concat([currentRole]);   // keep a role the viewer cannot assign visible
+      roleEl.innerHTML = list.map(function (r) { return '<option>' + r + '</option>'; }).join('');
+      roleEl.value = typeEl.value === curType ? (currentRole === 'User' ? 'Cadet' : currentRole) : list[0];
     }
-    
-    if (!isValid) {
-      showToast('Invalid role name.', 'error');
-      return;
-    }
-    
-    showLoading();
-    google.script.run
-      .withSuccessHandler(function(result) {
-        if (result.success) {
-          showToast('Role updated', 'success');
-          loadUsers();
-        } else {
-          showToast(result.message || 'Error', 'error');
-          hideLoading();
-        }
-      })
-      .withFailureHandler(function(err) {
-        showToast('Error: ' + (err.message || err), 'error');
-        hideLoading();
-      })
-      .updateUserRole(userId, newRole);
+    typeEl.onchange = fill; fill();
+    function close() { o.remove(); }
+    document.getElementById('urX').onclick = close; document.getElementById('urCancel').onclick = close;
+    document.getElementById('urSave').onclick = function () {
+      var newRole = roleEl.value;
+      if (!newRole || newRole === currentRole) { close(); return; }
+      close(); showLoading();
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.success) { showToast('Role updated', 'success'); loadUsers(); }
+          else { showToast(result.message || 'Error', 'error'); hideLoading(); }
+        })
+        .withFailureHandler(function(err) { showToast('Error: ' + (err.message || err), 'error'); hideLoading(); })
+        .updateUserRole(userId, newRole);
+    };
   }
 
   function deleteUser(userId) {
