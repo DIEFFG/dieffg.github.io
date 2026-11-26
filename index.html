@@ -723,13 +723,14 @@
         <div id="page-users" class="page">
           <div class="page-header">
             <h2>User Management</h2>
+            <button class="btn btn-primary" id="addUserBtn" style="display:none" onclick="openAddUser()"><i class="fas fa-user-plus"></i> Add user</button>
           </div>
           <p class="page-description">Manage user registrations and access. Pending registrations require approval before users can access the system.</p>
           <div class="card">
             <div class="table-responsive">
               <table class="table">
-                <thead><tr><th>Reg. No.</th><th>Name</th><th>Email</th><th>Battalion</th><th>Unit</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
-                <tbody id="usersTableBody"><tr><td colspan="8" class="text-center">Loading...</td></tr></tbody>
+                <thead><tr><th>Reg. No.</th><th>Name</th><th>Email</th><th>Battalion</th><th>Unit</th><th>Type</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="usersTableBody"><tr><td colspan="9" class="text-center">Loading...</td></tr></tbody>
               </table>
             </div>
           </div>
