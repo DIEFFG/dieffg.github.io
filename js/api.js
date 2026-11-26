@@ -44,7 +44,7 @@
   function call(action, args) {
     args = args || [];
     var online = ONLINE_ONLY.test(action);
-    var mut = !online && MUTATION.test(action) && !NEVER_QUEUE.test(action), cid = (mut || (online && /(Preview|Confirm|Discard|Set|Check|Submit|Decide|Add|Entry|Save|Finalize|Reopen)$/.test(action))) ? uuid() : '';
+    var mut = !online && MUTATION.test(action) && !NEVER_QUEUE.test(action), cid = (mut || (online && /(Preview|Confirm|Discard|Set|Check|Submit|Decide|Add|Entry|Save|Finalize|Reopen|Draw|Replace|Seed)$/.test(action))) ? uuid() : '';
     return post(action, args, cid).then(function (j) {
       if (j.ok) {
         if (!mut && !online && !/^(login|guest|me|notif|getUser)/.test(action)) cacheSet(action, args, j.data);
