@@ -94,3 +94,8 @@ a { color: var(--primary); }
 .rl-set label { display:block; margin-top:8px; }
 [data-theme="dark"] .rl-stat, [data-theme="dark"] .rl-note { background:#1d2a1b; color:#e7efe4; } [data-theme="dark"] .rl-iss { color:#e7efe4; background:#1d2a1b; }
 @media (max-width:640px) { .rl-modal { width:98vw; max-width:98vw; } .rl-grid-wrap { max-height:38vh; } }
+
+/* roll: competition choice */
+.rl-comps{border:1px solid #d9e2d4;border-radius:8px;padding:10px 14px;margin:0 0 14px}
+.rl-comps legend{font-size:14px;padding:0 6px;width:auto}
+.rl-cb{display:inline-flex;align-items:center;gap:6px;margin:4px 14px 4px 0;cursor:pointer}
