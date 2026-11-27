@@ -1,6 +1,6 @@
 /* RECON service worker: app-shell cache, Firebase push (data-only), notification clicks. */
 importScripts('js/config.js');
-var CACHE = 'recon-shell-v36';
+var CACHE = 'recon-shell-v37';
 var SHELL = ['./', 'index.html', 'login.html', 'css/styles.css', 'css/modern.css', 'css/brand.css', 'js/splash.js', 'js/config.js', 'js/api.js', 'js/app.js', 'js/notify.js', 'js/ui.js', 'js/shield-import.js', 'js/roll-parse.js', 'js/roll.js', 'js/roll-export.js', 'js/competitions.js', 'js/competitions-mk.js', 'js/competitions-or.js', 'js/competitions-dr.js',
              'manifest.webmanifest', 'img/icon-192.png', 'img/icon-512.png'];
 
