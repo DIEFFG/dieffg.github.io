@@ -84,6 +84,12 @@
       '<input type="password" id="pwNew" class="form-control" placeholder="New password (8+ chars, letters & numbers)" style="margin-bottom:8px">' +
       '<button class="btn btn-outline btn-sm" id="pwSave">Change password</button><div id="setMsg" class="set-hint"></div></div></div>';
     document.body.appendChild(ov);
+    ['pwOld', 'pwNew'].forEach(function (id) {
+      var inp = $(id), w = document.createElement('div'); w.style.cssText = 'position:relative;margin-bottom:8px'; inp.style.marginBottom = '0'; inp.style.paddingRight = '44px'; inp.parentNode.insertBefore(w, inp); w.appendChild(inp);
+      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Show password'); b.style.cssText = 'position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;color:#666;padding:8px'; b.innerHTML = '<i class="fas fa-eye"></i>';
+      b.onclick = function () { var show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; b.innerHTML = '<i class="fas fa-eye' + (show ? '-slash' : '') + '"></i>'; b.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); };
+      w.appendChild(b);
+    });
     $('setClose').onclick = function () { ov.remove(); };
     var hint = $('pushHint');
     if (isIOS() && !standalone()) hint.textContent = 'iPhone/iPad: install RECON to your Home Screen (Share > Add to Home Screen) to receive push alerts.';

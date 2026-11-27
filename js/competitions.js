@@ -5,7 +5,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function role() { var s = window.reconApi && reconApi.getSession(); return s && s.user ? s.user.role : 'Guest'; }
   function isAdmin() { return role() === 'Admin' || role() === 'Super Admin'; }
-  function allowed() { return isAdmin() || role() === 'Judge'; }
+  function allowed() { var s = window.reconApi && reconApi.getSession(); return isAdmin() || role() === 'Judge' || !!(s && s.user && s.user.judge); }
   window.reconCompAllowed = allowed;
   function api(a, args) { return reconApi.call(a, args || []); }
   function toast(m, t) { if (window.showToast) window.showToast(m, t || 'info'); }
@@ -68,10 +68,11 @@
   // ---------- judges (Admin) ----------
   function renderJudges() {
     var el = $('cpJudges');
-    var h = '<p class="muted">Create judge accounts in User Management (set the role to Judge), then tick what each judge scores. Judges see only the scoring screens, never cadet or roll details.</p>';
+    var h = '<p class="muted">Tick what each judge scores. A person whose role is Judge sees only the scoring screens. Any other adult (Instructor, Unit Officer and so on) keeps their normal role and also gets Competitions: add them below. They sign in with the same account.</p>';
     h += ov.judges.length ? '<div class="rl-scroll"><table class="data-table"><thead><tr><th>Judge</th><th>Email</th>' + ov.live.map(function (c) { return '<th>' + esc(c.label) + '</th>'; }).join('') + '</tr></thead><tbody>' +
-      ov.judges.map(function (j) { return '<tr><td>' + esc(j.name) + '</td><td>' + esc(j.email) + '</td>' + ov.live.map(function (c) { return '<td><input type="checkbox" class="cp-asg" data-e="' + esc(j.email) + '" data-c="' + c.code + '"' + (j.active && j.comps.indexOf(c.code) >= 0 ? ' checked' : '') + '></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>'
-      : '<p>No Judge accounts yet.</p>';
+      ov.judges.map(function (j) { return '<tr><td>' + esc(j.name) + (j.role && j.role !== 'Judge' ? ' <span class="muted">(' + esc(j.role) + ')</span>' : '') + '</td><td>' + esc(j.email) + '</td>' + ov.live.map(function (c) { return '<td><input type="checkbox" class="cp-asg" data-e="' + esc(j.email) + '" data-c="' + c.code + '"' + (j.active && j.comps.indexOf(c.code) >= 0 ? ' checked' : '') + '></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>'
+      : '<p>No judges yet. Create an account with the Judge role, or add an existing adult below.</p>';
+    h += '<div class="form-group" style="margin-top:10px"><label>Add an adult who has another role as a judge</label><div class="shi-pw"><select id="cpCand" class="form-control"><option value="">Select a person...</option>' + (ov.candidates || []).map(function (c) { return '<option value="' + esc(c.email) + '">' + esc(c.name) + ' (' + esc(c.role) + ')</option>'; }).join('') + '</select><button class="btn btn-outline btn-sm" type="button" id="cpCandAdd">Add</button></div></div>';
     h += '<label>Judges needed per platoon (Records Review) <input id="cpMin" type="number" min="0" max="20" class="form-control" style="width:90px;display:inline-block" value="' + esc(ov.settings.recordsMinJudges) + '"></label><br><label>Judges needed per platoon (Military Knowledge) <input id="cpMkMin" type="number" min="0" max="20" class="form-control" style="width:90px;display:inline-block" value="' + esc(ov.settings.mkMinJudges) + '"></label><br><label>Orienteering ties <select id="cpTie" class="form-control" style="width:auto;display:inline-block"><option value="SHARE"' + (ov.settings.orientTieBreak === 'SHARE' ? ' selected' : '') + '>Equal totals share the rank</option><option value="TIME"' + (ov.settings.orientTieBreak === 'TIME' ? ' selected' : '') + '>Faster time wins the tie</option></select></label><br><label>Drill: required strength per battalion (cadets) <input id="cpDrStr" type="number" min="1" max="300" class="form-control" style="width:90px;display:inline-block" value="' + esc(ov.settings.drillStrength) + '"></label><br><label>Judges needed per battalion (Drill) <input id="cpDrMin" type="number" min="0" max="20" class="form-control" style="width:90px;display:inline-block" value="' + esc(ov.settings.drillMinJudges) + '"></label> <button class="btn btn-outline btn-sm" id="cpMinSave">Save</button>';
     el.innerHTML = h;
     Array.prototype.forEach.call(document.querySelectorAll('.cp-asg'), function (cb) {
@@ -80,6 +81,13 @@
         api('compJudgesSet', [{ email: e, competitions: comps }]).then(function (r) { if (!r.success) { toast(r.error, 'error'); cb.checked = !cb.checked; return; } toast('Saved', 'success'); }).catch(err);
       };
     });
+    $('cpCandAdd').onclick = function () {
+      var e = $('cpCand').value; if (!e) { toast('Pick a person first', 'error'); return; }
+      var c = (ov.candidates || []).filter(function (x) { return x.email === e; })[0]; if (!c) return;
+      ov.candidates = ov.candidates.filter(function (x) { return x.email !== e; });
+      ov.judges.push({ email: c.email, name: c.name, role: c.role, status: 'Active', comps: [], active: false });
+      renderJudges(); toast('Now tick the competitions ' + c.name + ' will judge', 'info');
+    };
     $('cpMinSave').onclick = function () { api('compSettingsSet', [{ recordsMinJudges: $('cpMin').value, mkMinJudges: $('cpMkMin').value, orientTieBreak: $('cpTie').value, drillStrength: $('cpDrStr').value, drillMinJudges: $('cpDrMin').value }]).then(function (r) { toast(r.success ? 'Saved' : r.error, r.success ? 'success' : 'error'); }).catch(err); };
   }
 
