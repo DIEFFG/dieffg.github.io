@@ -53,14 +53,14 @@
     if (!ov.competitions.length) h += '<div class="card"><div class="card-body"><p>' + (ov.isAdmin ? 'No competitions are set up.' : 'You have not been assigned to judge a competition yet. Ask an Admin to assign you.') + '</p></div></div>';
     ov.competitions.forEach(function (c) {
       h += '<div class="card cp-card"><div class="card-body"><div class="cp-top"><h3>' + esc(c.label) + '</h3>' + badge(c.status) + '</div>' +
-        '<div class="shi-actions">' + (ov.canScore.indexOf(c.code) >= 0 || (ov.isAdmin && c.code === 'MILKNOW') ? '<button class="btn btn-primary" data-score="' + c.code + '"><i class="fas fa-' + (c.code === 'MILKNOW' ? 'dice' : 'pen') + '"></i> ' + (c.code === 'MILKNOW' ? (ov.canScore.indexOf(c.code) >= 0 ? 'Draw and score' : 'Draw a cadet') : 'Score platoons') + '</button> ' : '') +
+        '<div class="shi-actions">' + (ov.canScore.indexOf(c.code) >= 0 || (ov.isAdmin && (c.code === 'MILKNOW' || c.code === 'ORIENT')) ? '<button class="btn btn-primary" data-score="' + c.code + '"><i class="fas fa-' + (c.code === 'MILKNOW' ? 'dice' : c.code === 'ORIENT' ? 'compass' : 'pen') + '"></i> ' + (c.code === 'MILKNOW' ? (ov.canScore.indexOf(c.code) >= 0 ? 'Draw and score' : 'Draw a cadet') : c.code === 'ORIENT' ? (ov.canScore.indexOf(c.code) >= 0 ? 'Enter results' : 'View results') : 'Score platoons') + '</button> ' : '') +
         (ov.isAdmin ? '<button class="btn btn-secondary" data-stand="' + c.code + '"><i class="fas fa-list-ol"></i> Standings and finalise</button> ' : '') +
         (ov.isAdmin && c.code === 'MILKNOW' ? '<button class="btn btn-outline" id="cpBank"><i class="fas fa-book"></i> Question bank</button>' : '') + '</div></div></div>';
     });
     if (ov.isAdmin) h += '<div class="card"><div class="card-header"><h3>Judges</h3></div><div class="card-body" id="cpJudges"></div></div>';
     $('cpMain').innerHTML = h;
-    Array.prototype.forEach.call(document.querySelectorAll('[data-score]'), function (b) { b.onclick = function () { if (b.getAttribute('data-score') === 'MILKNOW') { if (window.reconMkScore) window.reconMkScore(); } else openScoring(); }; });
-    Array.prototype.forEach.call(document.querySelectorAll('[data-stand]'), function (b) { b.onclick = function () { if (b.getAttribute('data-stand') === 'MILKNOW') { if (window.reconMkStand) window.reconMkStand(); } else openStandings(); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-score]'), function (b) { b.onclick = function () { var cc = b.getAttribute('data-score'); if (cc === 'MILKNOW') { if (window.reconMkScore) window.reconMkScore(); } else if (cc === 'ORIENT') { if (window.reconOrScore) window.reconOrScore(); } else openScoring(); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-stand]'), function (b) { b.onclick = function () { var sc = b.getAttribute('data-stand'); if (sc === 'MILKNOW') { if (window.reconMkStand) window.reconMkStand(); } else if (sc === 'ORIENT') { if (window.reconOrStand) window.reconOrStand(); } else openStandings(); }; });
     var bk = $('cpBank'); if (bk) bk.onclick = function () { if (window.reconMkBank) window.reconMkBank(); };
     if (ov.isAdmin) renderJudges();
   }
@@ -72,7 +72,7 @@
     h += ov.judges.length ? '<div class="rl-scroll"><table class="data-table"><thead><tr><th>Judge</th><th>Email</th>' + ov.live.map(function (c) { return '<th>' + esc(c.label) + '</th>'; }).join('') + '</tr></thead><tbody>' +
       ov.judges.map(function (j) { return '<tr><td>' + esc(j.name) + '</td><td>' + esc(j.email) + '</td>' + ov.live.map(function (c) { return '<td><input type="checkbox" class="cp-asg" data-e="' + esc(j.email) + '" data-c="' + c.code + '"' + (j.active && j.comps.indexOf(c.code) >= 0 ? ' checked' : '') + '></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>'
       : '<p>No Judge accounts yet.</p>';
-    h += '<label>Judges needed per platoon (Records Review) <input id="cpMin" type="number" min="0" max="20" class="form-control" style="width:90px;display:inline-block" value="' + esc(ov.settings.recordsMinJudges) + '"></label><br><label>Judges needed per platoon (Military Knowledge) <input id="cpMkMin" type="number" min="0" max="20" class="form-control" style="width:90px;display:inline-block" value="' + esc(ov.settings.mkMinJudges) + '"></label> <button class="btn btn-outline btn-sm" id="cpMinSave">Save</button>';
+    h += '<label>Judges needed per platoon (Records Review) <input id="cpMin" type="number" min="0" max="20" class="form-control" style="width:90px;display:inline-block" value="' + esc(ov.settings.recordsMinJudges) + '"></label><br><label>Judges needed per platoon (Military Knowledge) <input id="cpMkMin" type="number" min="0" max="20" class="form-control" style="width:90px;display:inline-block" value="' + esc(ov.settings.mkMinJudges) + '"></label><br><label>Orienteering ties <select id="cpTie" class="form-control" style="width:auto;display:inline-block"><option value="SHARE"' + (ov.settings.orientTieBreak === 'SHARE' ? ' selected' : '') + '>Equal totals share the rank</option><option value="TIME"' + (ov.settings.orientTieBreak === 'TIME' ? ' selected' : '') + '>Faster time wins the tie</option></select></label> <button class="btn btn-outline btn-sm" id="cpMinSave">Save</button>';
     el.innerHTML = h;
     Array.prototype.forEach.call(document.querySelectorAll('.cp-asg'), function (cb) {
       cb.onchange = function () {
@@ -80,7 +80,7 @@
         api('compJudgesSet', [{ email: e, competitions: comps }]).then(function (r) { if (!r.success) { toast(r.error, 'error'); cb.checked = !cb.checked; return; } toast('Saved', 'success'); }).catch(err);
       };
     });
-    $('cpMinSave').onclick = function () { api('compSettingsSet', [{ recordsMinJudges: $('cpMin').value, mkMinJudges: $('cpMkMin').value }]).then(function (r) { toast(r.success ? 'Saved' : r.error, r.success ? 'success' : 'error'); }).catch(err); };
+    $('cpMinSave').onclick = function () { api('compSettingsSet', [{ recordsMinJudges: $('cpMin').value, mkMinJudges: $('cpMkMin').value, orientTieBreak: $('cpTie').value }]).then(function (r) { toast(r.success ? 'Saved' : r.error, r.success ? 'success' : 'error'); }).catch(err); };
   }
 
   // ---------- scoring (Judge) ----------
